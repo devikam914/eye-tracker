@@ -14,7 +14,7 @@ if not cap.isOpened():
 pyautogui.FAILSAFE = False
 screen_w, screen_h = pyautogui.size()
 BLINK_THRESHOLD    = 0.18
-CALIB_EAR_MIN      = 0.12
+CALIB_EAR_MIN      = 0.08  # Lowered fallback threshold
 FONT               = cv2.FONT_HERSHEY_SIMPLEX
 DEBUG_MODE         = True
 
@@ -112,12 +112,6 @@ class RBFGazeMapper:
         return float(self.rbf_x(q)[0]), float(self.rbf_y(q)[0])
 
 
-# -- RESIDUAL CORRECTION FIELD -------------------------------------------------
-# Based on Labvanced 2024 drift correction method.
-# Measures the actual prediction error at N known screen positions.
-# Fits a smooth RBF over those errors.
-# During tracking: corrected = predicted + residual(predicted)
-# This handles NON-UNIFORM offset which a global affine cannot fix.
 class ResidualCorrectionField:
     def __init__(self):
         self.rbf_rx = None
@@ -131,8 +125,6 @@ class ResidualCorrectionField:
         res_x = actual_arr[:,0] - pred_arr[:,0]
         res_y = actual_arr[:,1] - pred_arr[:,1]
 
-        # Thin plate spline over predicted coordinates
-        # smoothing=0.5 prevents overfitting to noisy correction measurements
         self.rbf_rx = RBFInterpolator(pred_arr, res_x,
                                       kernel='thin_plate_spline', smoothing=0.5)
         self.rbf_ry = RBFInterpolator(pred_arr, res_y,
@@ -193,9 +185,17 @@ def add_edge_anchors(gaze_pts, screen_pts, sw, sh, nr=7, nc=7):
 
 
 def collect_samples(n, label, tx, ty, settle=1.5):
-    # Settle phase
+    # Settle phase: Process frames to clear buffer AND compute adaptive EAR
     t0 = cv2.getTickCount()
+    settle_ears = []
+    
     while (cv2.getTickCount()-t0)/cv2.getTickFrequency() < settle:
+        ret, frame = cap.read()
+        if ret:
+            _, _, ear = detector.process(frame)
+            if ear is not None:
+                settle_ears.append(ear)
+
         display = np.zeros((screen_h, screen_w, 3), dtype=np.uint8)
         cv2.circle(display, (tx,ty), 20, (80,180,255), 2)
         cv2.circle(display, (tx,ty), 7,  (80,180,255), -1)
@@ -207,14 +207,21 @@ def collect_samples(n, label, tx, ty, settle=1.5):
         if cv2.waitKey(1) & 0xFF == 27:
             cap.release(); cv2.destroyAllWindows(); exit()
 
+    # Calculate adaptive threshold: 60% of average settle EAR
+    if len(settle_ears) > 5:
+        adaptive_ear_min = np.mean(settle_ears) * 0.60
+    else:
+        adaptive_ear_min = CALIB_EAR_MIN
+
     # Collection phase
     samples = []
     while len(samples) < n:
         ret, frame = cap.read()
         if not ret: continue
         gx, gy, ear = detector.process(frame)
-        if gx is not None and ear > CALIB_EAR_MIN:
+        if gx is not None and ear > adaptive_ear_min:
             samples.append([gx, gy])
+            
         display = np.zeros((screen_h, screen_w, 3), dtype=np.uint8)
         cv2.circle(display, (tx,ty), 8, (0,220,80), -1)
         cv2.circle(display, (tx,ty), 2, (255,255,255), -1)
@@ -357,15 +364,6 @@ print("")
 
 
 # -- RESIDUAL CORRECTION FIELD -------------------------------------------------
-# 9-point 3x3 grid correction.
-# For each correction point:
-#   1. Collect gaze samples (same as calibration)
-#   2. Run through the fitted RBF to get predicted screen position
-#   3. Record residual = actual_screen - predicted_screen
-# Fit a smooth RBF over residuals.
-# During tracking: corrected = predicted + residual_rbf(predicted)
-# This corrects NON-UNIFORM session-based offset that global affine cannot fix.
-
 corr_fracs = [0.02, 0.35, 0.65, 0.98]
 correction_grid = [(x,y) for y in corr_fracs for x in corr_fracs]
 N_CORR = len(correction_grid)
@@ -386,7 +384,6 @@ for ci, (fx, fy) in enumerate(correction_grid):
     ty = int(fy * screen_h)
     label = "Correction " + str(ci+1) + "/" + str(N_CORR)
 
-    # More samples for correction - need accuracy here
     raw = collect_samples(60, label, tx, ty, settle=2.0)
 
     if len(raw) >= 10:
@@ -409,7 +406,6 @@ for ci, (fx, fy) in enumerate(correction_grid):
 
 cv2.destroyAllWindows()
 
-# Fit residual correction field
 corrector = ResidualCorrectionField()
 corrector.drift_x = 0.0
 corrector.drift_y = 0.0
@@ -418,7 +414,6 @@ if len(corr_pred_pts) >= 4:
     print("")
     print("Residual correction fitted on " + str(len(corr_pred_pts)) + " points.")
 
-    # Show mean residual before vs after
     total_before = 0.0
     total_after  = 0.0
     for i in range(len(corr_pred_pts)):
@@ -453,8 +448,6 @@ while True:
     snapshot  = (key == 32)
     do_recorr = (key == ord('r') or key == ord('R'))
 
-    # R key: fast 3-second drift correction at screen center
-    # Measures current Y drift and updates correction field offset
     if do_recorr and corrector.fitted:
         print("Drift correction triggered. Look at screen center...")
         cx_t = screen_w // 2
@@ -472,7 +465,6 @@ while True:
             px_c, py_c = corrector.correct(px_d, py_d)
             drift_x = float(cx_t - px_c)
             drift_y = float(cy_t - py_c)
-            # Update ALL correction field residuals by this drift amount
             corrector.drift_x = getattr(corrector, 'drift_x', 0.0) + drift_x
             corrector.drift_y = getattr(corrector, 'drift_y', 0.0) + drift_y
             print("Drift correction applied: ("
@@ -484,7 +476,6 @@ while True:
         proc = normalizer.transform(flip_x(np.array([[gx,gy]])))[0]
         pred_x, pred_y = mapper.predict(proc)
 
-        # Apply residual correction field + accumulated drift
         pred_x, pred_y = corrector.correct(pred_x, pred_y)
         pred_x += corrector.drift_x
         pred_y += corrector.drift_y
