@@ -647,7 +647,7 @@ const layouts = {
     [
       {l:'I need water', cls:'key-special', wide:true, action:'phrase-I need water'},
       {l:'I am in pain', cls:'key-special', wide:true, action:'phrase-I am in pain'},
-      {l:'Call doctor', cls:'key-special', wide:true, action:'phrase-Call doctor'}
+      {l:'📞 CALL', cls:'key-delete', wide:true, action:'trigger-app-py'}
     ],
     [
       {l:'I am tired', cls:'key-special', wide:true, action:'phrase-I am tired'},
@@ -657,7 +657,7 @@ const layouts = {
     [
       {l:'Turn off lights', cls:'key-special', wide:true, action:'phrase-Turn off lights'},
       {l:'I am okay', cls:'key-special', wide:true, action:'phrase-I am okay'},
-      {l:'Call family', cls:'key-special', wide:true, action:'phrase-Call family'}
+      
     ],
     [
       {l:'ABC', cls:'key-special', wide:true, action:'mode-alpha', sub:'Letters'},
@@ -819,6 +819,12 @@ function buildKeyboard() {
 function fireKey(k) {
   const action = k.action;
 
+  if (action === 'trigger-app-py') {
+    if (window.pywebview) {
+        window.pywebview.api.launch_call_assistant();
+    }
+    return;
+  }
   if (action === 'delete') {
     text = text.slice(0, -1);
   } else if (action === 'space') {
