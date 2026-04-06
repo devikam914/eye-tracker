@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Calling - Assistive Gaze Control</title>
+    <link rel="stylesheet" href="calling.css">
+</head>
+<body>
+    <div class="calling-container">
+        <!-- Back Button -->
+        <button class="back-btn" onclick="goBack()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Back to Home</span>
+        </button>
+
+        <!-- Title -->
+        <h1 class="page-title">Make a Call</h1>
+
+        <!-- Call Options -->
+        <div class="call-options">
+            <!-- Emergency Call Button -->
+            <div class="call-card emergency-card" data-action="emergency">
+                <div class="call-icon-container emergency-icon">
+                    <svg class="call-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                </div>
+                <h2 class="call-title">🚨 Emergency</h2>
+                <p class="call-subtitle">Call 911 immediately</p>
+                <div class="call-number">911</div>
+                <div class="dwell-progress"></div>
+            </div>
+
+            <!-- Family Call Button -->
+            <div class="call-card family-card" data-action="family">
+                <div class="call-icon-container family-icon">
+                    <svg class="call-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </div>
+                <h2 class="call-title">👨‍👩‍👧‍👦 Call Family</h2>
+                <p class="call-subtitle">Call your family member</p>
+                <div class="call-number" id="family-number">+1 (555) 123-4567</div>
+                <div class="dwell-progress"></div>
+            </div>
+        </div>
+
+        <!-- Instruction -->
+        <div class="instruction-bar">
+            <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <span>Look at a card to select • Dwell to initiate call</span>
+        </div>
+
+        <!-- Call Status Modal -->
+        <div id="call-modal" class="call-modal hidden">
+            <div class="modal-content">
+                <div class="calling-animation">
+                    <div class="pulse-ring"></div>
+                    <div class="pulse-ring delay-1"></div>
+                    <div class="pulse-ring delay-2"></div>
+                    <svg class="phone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                </div>
+                <h2 id="modal-title">Calling Emergency...</h2>
+                <p id="modal-number">911</p>
+                <button class="cancel-btn" onclick="cancelCall()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="calling.js"></script>
+</body>
+</html>

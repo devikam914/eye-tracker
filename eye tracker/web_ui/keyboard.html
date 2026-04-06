@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>GazeType - Virtual Keyboard</title>
+    <link rel="stylesheet" href="keyboard.css">
+</head>
+<body>
+    <div class="keyboard-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <button class="back-btn-header" onclick="goBack()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span>Back to Home</span>
+                </button>
+                
+                <div class="dwell-control-header">
+                    <button class="dwell-btn" onclick="decreaseDwell()">−</button>
+                    <span id="dwell-value">1.2s</span>
+                    <button class="dwell-btn" onclick="increaseDwell()">+</button>
+                </div>
+                
+                <!-- Dark Mode Toggle -->
+                <label class="theme-toggle">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="theme-slider">
+                        <span class="theme-icon moon">🌙</span>
+                        <span class="theme-icon sun">☀️</span>
+                    </span>
+                </label>
+            </div>
+            
+            <div class="logo">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <h1>GazeType</h1>
+            </div>
+        </div>
+
+        <!-- Text Composition Area -->
+        <div class="text-area-container">
+            <div class="text-area-header">
+                <div class="text-area-label">COMPOSED TEXT</div>
+                <span class="char-count" id="char-count">0 chars</span>
+            </div>
+            <div class="text-area" id="text-area" contenteditable="true"></div>
+            
+            <!-- Word Predictions -->
+            <div class="word-predictions" id="word-predictions">
+                <!-- Predictions will be inserted here dynamically -->
+            </div>
+            
+            <div class="text-area-actions">
+                <button class="action-btn" onclick="copyText()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    Copy
+                </button>
+                <button class="action-btn speak-btn" onclick="speakText()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                    Speak
+                </button>
+                <button class="action-btn call-btn" onclick="goToCalling()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                    Call
+                </button>
+                <button class="action-btn clear-btn" onclick="clearText()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- Keyboard Main Area (wraps tabs and keyboard) -->
+        <div class="keyboard-main-area">
+            <!-- Keyboard Mode Tabs -->
+            <div class="keyboard-tabs">
+                <button class="tab-btn active" data-mode="abc">ABC</button>
+                <button class="tab-btn" data-mode="123">123</button>
+                <button class="tab-btn" data-mode="symbols">!@#</button>
+                <button class="tab-btn" data-mode="phrases">PHRASES</button>
+            </div>
+
+            <!-- Keyboard Layouts -->
+            <div id="keyboard-content">
+            <!-- ABC Layout (Default) -->
+            <div class="keyboard-layout active" id="abc-layout">
+                <div class="keyboard-row">
+                    <button class="key" data-key="q">q</button>
+                    <button class="key" data-key="w">w</button>
+                    <button class="key" data-key="e">e</button>
+                    <button class="key" data-key="r">r</button>
+                    <button class="key" data-key="t">t</button>
+                    <button class="key" data-key="y">y</button>
+                    <button class="key" data-key="u">u</button>
+                    <button class="key" data-key="i">i</button>
+                    <button class="key" data-key="o">o</button>
+                    <button class="key" data-key="p">p</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key" data-key="a">a</button>
+                    <button class="key" data-key="s">s</button>
+                    <button class="key" data-key="d">d</button>
+                    <button class="key" data-key="f">f</button>
+                    <button class="key" data-key="g">g</button>
+                    <button class="key" data-key="h">h</button>
+                    <button class="key" data-key="j">j</button>
+                    <button class="key" data-key="k">k</button>
+                    <button class="key" data-key="l">l</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key" data-key="z">z</button>
+                    <button class="key" data-key="x">x</button>
+                    <button class="key" data-key="c">c</button>
+                    <button class="key" data-key="v">v</button>
+                    <button class="key" data-key="b">b</button>
+                    <button class="key" data-key="n">n</button>
+                    <button class="key" data-key="m">m</button>
+                    <button class="key" data-key=",">,</button>
+                    <button class="key" data-key=".">.</button>
+                </div>
+            </div>
+
+            <!-- Numbers Layout -->
+            <div class="keyboard-layout" id="123-layout">
+                <div class="keyboard-row">
+                    <button class="key" data-key="1">1</button>
+                    <button class="key" data-key="2">2</button>
+                    <button class="key" data-key="3">3</button>
+                    <button class="key" data-key="4">4</button>
+                    <button class="key" data-key="5">5</button>
+                    <button class="key" data-key="6">6</button>
+                    <button class="key" data-key="7">7</button>
+                    <button class="key" data-key="8">8</button>
+                    <button class="key" data-key="9">9</button>
+                    <button class="key" data-key="0">0</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key" data-key="-">-</button>
+                    <button class="key" data-key="/">/</button>
+                    <button class="key" data-key=":">:</button>
+                    <button class="key" data-key=";">;</button>
+                    <button class="key" data-key="(">(</button>
+                    <button class="key" data-key=")">)</button>
+                    <button class="key" data-key="$">$</button>
+                    <button class="key" data-key="&">&</button>
+                    <button class="key" data-key="@">@</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key" data-key='"'>"</button>
+                    <button class="key" data-key=".">.</button>
+                    <button class="key" data-key=",">,</button>
+                    <button class="key" data-key="?">?</button>
+                    <button class="key" data-key="!">!</button>
+                    <button class="key" data-key="'">'</button>
+                </div>
+            </div>
+
+            <!-- Symbols Layout -->
+            <div class="keyboard-layout" id="symbols-layout">
+                <div class="keyboard-row">
+                    <button class="key" data-key="[">[</button>
+                    <button class="key" data-key="]">]</button>
+                    <button class="key" data-key="{">{</button>
+                    <button class="key" data-key="}">}</button>
+                    <button class="key" data-key="#">#</button>
+                    <button class="key" data-key="%">%</button>
+                    <button class="key" data-key="^">^</button>
+                    <button class="key" data-key="*">*</button>
+                    <button class="key" data-key="+">+</button>
+                    <button class="key" data-key="=">=</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key" data-key="_">_</button>
+                    <button class="key" data-key="\\">\</button>
+                    <button class="key" data-key="|">|</button>
+                    <button class="key" data-key="~">~</button>
+                    <button class="key" data-key="<"><</button>
+                    <button class="key" data-key=">">></button>
+                    <button class="key" data-key="€">€</button>
+                    <button class="key" data-key="£">£</button>
+                    <button class="key" data-key="¥">¥</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key" data-key="•">•</button>
+                    <button class="key" data-key="°">°</button>
+                    <button class="key" data-key="...">...</button>
+                    <button class="key" data-key="¿">¿</button>
+                    <button class="key" data-key="¡">¡</button>
+                </div>
+            </div>
+
+            <!-- Phrases Layout -->
+            <div class="keyboard-layout phrases-layout" id="phrases-layout">
+                <div class="phrases-grid">
+                    <button class="phrase-card" data-text="Yes">Yes</button>
+                    <button class="phrase-card" data-text="No">No</button>
+                    <button class="phrase-card" data-text="Help">Help</button>
+                    <button class="phrase-card" data-text="I need water">I need water</button>
+                    <button class="phrase-card" data-text="I am in pain">I am in pain</button>
+                    <button class="phrase-card" data-text="Call doctor">Call doctor</button>
+                    <button class="phrase-card" data-text="I am tired">I am tired</button>
+                    <button class="phrase-card" data-text="Thank you">Thank you</button>
+                    <button class="phrase-card" data-text="Please wait">Please wait</button>
+                    <button class="phrase-card" data-text="Turn off lights">Turn off lights</button>
+                    <button class="phrase-card" data-text="I am okay">I am okay</button>
+                    <button class="phrase-card" data-text="Call family">Call family</button>
+                </div>
+            </div>
+
+            <!-- Bottom Controls -->
+            <div class="bottom-controls">
+                <button class="control-btn shift-btn" onclick="toggleShift()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M12 19V5M5 12l7-7 7 7"></path>
+                    </svg>
+                    <span class="btn-label">SHIFT</span>
+                </button>
+                <button class="control-btn space-btn" onclick="addSpace()">
+                    <span class="btn-label">SPACE</span>
+                </button>
+                <button class="control-btn delete-btn" onclick="deleteChar()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+                        <line x1="18" y1="9" x2="12" y2="15"></line>
+                        <line x1="12" y1="9" x2="18" y2="15"></line>
+                    </svg>
+                    <span class="btn-label">DELETE</span>
+                </button>
+            </div>
+        </div>
+        <!-- End of keyboard-main-area -->
+    </div>
+
+    <script src="keyboard.js"></script>
+</body>
+</html>

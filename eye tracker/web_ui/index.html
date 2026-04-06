@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Assistive Gaze Control</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </div>
+                <h1 class="logo-text">Gaze<span class="logo-highlight">Control</span></h1>
+            </div>
+            
+            <div class="header-controls">
+                <label class="theme-toggle">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="theme-slider">
+                        <span class="theme-icon moon">🌙</span>
+                        <span class="theme-icon sun">☀️</span>
+                    </span>
+                    <span class="theme-label" id="theme-label">Light</span>
+                </label>
+                
+                <div class="dwell-control">
+                    <span class="dwell-label">Dwell:</span>
+                    <button class="dwell-btn" onclick="decreaseDwell()">−</button>
+                    <span class="dwell-value" id="dwell-value">2.0s</span>
+                    <button class="dwell-btn" onclick="increaseDwell()">+</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Tiles Section -->
+        <div class="tiles-section">
+            <div class="tiles-grid">
+                <!-- Calling Tile -->
+                <div class="tile" data-action="calling">
+                    <div class="tile-icon-circle">
+                        <svg class="tile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                        </svg>
+                    </div>
+                    <div class="tile-content">
+                        <h3 class="tile-title">Calling</h3>
+                        <p class="tile-subtitle">Make & Receive Calls</p>
+                    </div>
+                    <div class="dwell-progress"></div>
+                </div>
+
+                <!-- Browsing Tile -->
+                <div class="tile" data-action="browsing">
+                    <div class="tile-icon-circle">
+                        <svg class="tile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        </svg>
+                    </div>
+                    <div class="tile-content">
+                        <h3 class="tile-title">Browsing</h3>
+                        <p class="tile-subtitle">Web & Online Apps</p>
+                    </div>
+                    <div class="dwell-progress"></div>
+                </div>
+
+                <!-- Virtual Keyboard Tile -->
+                <div class="tile" data-action="keyboard">
+                    <div class="tile-icon-circle">
+                        <svg class="tile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                            <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"></path>
+                        </svg>
+                    </div>
+                    <div class="tile-content">
+                        <h3 class="tile-title">Virtual Keyboard</h3>
+                        <p class="tile-subtitle">Type & Communicate</p>
+                    </div>
+                    <div class="dwell-progress"></div>
+                </div>
+
+                <!-- Settings Tile -->
+                <div class="tile" data-action="settings">
+                    <div class="tile-icon-circle">
+                        <svg class="tile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </div>
+                    <div class="tile-content">
+                        <h3 class="tile-title">Settings</h3>
+                        <p class="tile-subtitle">System Preferences</p>
+                    </div>
+                    <div class="dwell-progress"></div>
+                </div>
+            </div>
+
+            <!-- Instruction Bar -->
+            <div class="instruction-bar">
+                <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <span>Look at an option to select • Dwell to activate</span>
+            </div>
+        </div>
+
+        <!-- Bottom Info Bar -->
+        <div class="info-bar">
+            <!-- Date Widget -->
+            <div class="info-widget">
+                <svg class="widget-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <div class="widget-content">
+                    <div class="widget-title" id="date">April 24, 2024</div>
+                    <div class="widget-subtitle" id="day">Wednesday</div>
+                </div>
+            </div>
+
+            <!-- Time Widget -->
+            <div class="info-widget">
+                <svg class="widget-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <div class="widget-content">
+                    <div class="widget-title" id="time">10:45 AM</div>
+                    <div class="widget-subtitle" id="full-date">April 24, 2024 • Wednesday</div>
+                </div>
+            </div>
+
+            <!-- Battery Widget -->
+            <div class="info-widget">
+                <div class="battery-icon">
+                    <div class="battery-level" id="battery-level"></div>
+                </div>
+                <div class="widget-content">
+                    <div class="widget-title" id="battery-percent">85%</div>
+                    <div class="widget-subtitle">Battery</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

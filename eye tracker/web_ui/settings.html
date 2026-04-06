@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Settings - Assistive Gaze Control</title>
+    <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+    <div class="settings-container">
+        <div class="settings-panel">
+            <!-- Header -->
+            <div class="settings-header">
+                <button class="back-btn" onclick="goBack()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span>Back to Home</span>
+                </button>
+                <h1>Settings</h1>
+                <div style="width: 180px;"></div> <!-- Spacer for centering -->
+            </div>
+
+            <!-- Settings Content -->
+            <div class="settings-content">
+                <!-- Dwell Time -->
+                <div class="setting-item">
+                    <label class="setting-label">Dwell Time</label>
+                    <div class="dwell-control">
+                        <button class="control-btn" onclick="decreaseDwell()">−</button>
+                        <div class="dwell-display">
+                            <span id="dwell-value">2.5</span>s
+                        </div>
+                        <button class="control-btn" onclick="increaseDwell()">+</button>
+                    </div>
+                </div>
+
+                <!-- Dark Mode Toggle -->
+                <div class="setting-item">
+                    <label class="setting-label">Dark Mode</label>
+                    <div class="toggle-container">
+                        <span class="toggle-label">Light Mode</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode()">
+                            <span class="toggle-slider">
+                                <span class="toggle-icon moon">🌙</span>
+                                <span class="toggle-icon sun">☀️</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Bluetooth Toggle -->
+                <div class="setting-item">
+                    <div class="setting-with-icon">
+                        <svg class="setting-icon bluetooth-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/>
+                        </svg>
+                        <label class="setting-label">Bluetooth</label>
+                    </div>
+                    <label class="toggle-switch small">
+                        <input type="checkbox" id="bluetooth-toggle" checked onchange="toggleBluetooth()">
+                        <span class="toggle-slider small"></span>
+                    </label>
+                </div>
+
+                <!-- Wi-Fi Toggle -->
+                <div class="setting-item">
+                    <div class="setting-with-icon">
+                        <svg class="setting-icon wifi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                            <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                            <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                        </svg>
+                        <label class="setting-label">Wi-Fi</label>
+                    </div>
+                    <label class="toggle-switch small">
+                        <input type="checkbox" id="wifi-toggle" checked onchange="toggleWifi()">
+                        <span class="toggle-slider small"></span>
+                    </label>
+                </div>
+
+                <!-- Family Contact -->
+                <div class="setting-section">
+                    <h2 class="section-title">Family Contact</h2>
+                    <p class="section-description">Set the contact for "Call Family" feature</p>
+                    
+                    <!-- Currently Saved Contact Display -->
+                    <div class="saved-contact-display" id="saved-contact-display" style="display: none;">
+                        <div class="saved-contact-header">
+                            <span class="saved-label">✓ Currently Saved:</span>
+                            <button class="edit-contact-btn" onclick="enableEditContact()">Edit</button>
+                        </div>
+                        <div class="saved-contact-info">
+                            <div class="saved-info-row">
+                                <span class="info-label">Name:</span>
+                                <span class="info-value" id="saved-name-display">-</span>
+                            </div>
+                            <div class="saved-info-row">
+                                <span class="info-label">Phone:</span>
+                                <span class="info-value" id="saved-phone-display">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Input Fields (hidden when contact exists) -->
+                    <div class="contact-input-section" id="contact-input-section">
+                        <div class="setting-item">
+                            <label class="setting-label">Family Member Name</label>
+                            <input type="text" id="family-name" class="text-input" placeholder="Enter name" value="">
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">Phone Number</label>
+                            <input type="tel" id="family-phone" class="text-input" placeholder="+1234567890" value="">
+                        </div>
+                        
+                        <button class="save-btn" onclick="saveFamilyContact()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                <polyline points="7 3 7 8 15 8"></polyline>
+                            </svg>
+                            Save Contact
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button class="action-btn shutdown-btn" onclick="shutdown()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                            <line x1="12" y1="2" x2="12" y2="12"></line>
+                        </svg>
+                        Shutdown
+                    </button>
+                    <button class="action-btn restart-btn" onclick="restart()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                        Restart
+                    </button>
+                </div>
+            </div>
+
+            <!-- Footer Instruction -->
+            <div class="settings-footer">
+                <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <span>Look at an option to select • Dwell & Blink to activate</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="settings.js"></script>
+</body>
+</html>
