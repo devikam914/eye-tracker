@@ -24,8 +24,7 @@ def start_app():
         'GazeType — Assistive Keyboard', 
         'index.html', 
         js_api=api,
-        width=1200,
-        height=900,
+        maximized=True,
         background_color='#0d1117'
     )
     webview.start()

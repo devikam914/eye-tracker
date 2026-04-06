@@ -31,43 +31,90 @@
     --key-delete-border: #5a2a2a;
   }
 
-  body.light {
-    --bg: #f0f4f8;
-    --surface: #ffffff;
-    --surface2: #e8edf3;
-    --border: #c8d0da;
-    --accent: #009e6e;
-    --accent2: #0070cc;
-    --danger: #d93a50;
-    --text: #1a2030;
-    --text-dim: #5a6472;
-    --key-bg: #ffffff;
-    --key-hover: #e2ecf8;
-    --key-special-bg: #e8f0fc;
-    --key-special-border: #aabedd;
-    --key-action-bg: #ede8fc;
-    --key-action-border: #b8a8e0;
-    --key-delete-bg: #fce8ea;
-    --key-delete-border: #e0a8ae;
-    --glow: 0 0 20px rgba(0,158,110,0.25);
+body.light {
+    --bg: #e6dfd3; 
+    --surface: #f0ebe1;
+    --surface2: #ded5c5;
+    --border: #c8bca7; 
+    --accent: #a35638; 
+    --accent2: #8a6343;
+    --danger: #b34d4d; 
+    --text: #4a4036; 
+    --text-dim: #7d7265;
+    
+    --key-bg: #f0ebe1; 
+    --key-hover: #e3d9c8;
+    --key-special-bg: #e8e0ce;
+    --key-special-border: #d1c4ae;
+    --key-action-bg: #e6d8d8;
+    --key-action-border: #c9a7a7;
+    --key-delete-bg: #ebd4d4;
+    --key-delete-border: #d4abab;
+    --glow: 0 0 15px rgba(163, 86, 56, 0.15);
   }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body.light .dwell-fill {
+    background: linear-gradient(to top, rgba(163, 86, 56, 0.25), rgba(163, 86, 56, 0.05)) !important;
+  }
+  body.light .pred-word .dwell-fill {
+    background: linear-gradient(to top, rgba(138, 99, 67, 0.25), rgba(138, 99, 67, 0.05)) !important;
+  }
+  body.light .dwell-outline {
+    border-color: rgba(163, 86, 56, 0.6) !important;
+  }
+  body.light .pred-word .dwell-outline {
+    border-color: rgba(138, 99, 67, 0.6) !important;
+  }
+  
+  body.light::before {
+    background-image:
+      linear-gradient(rgba(163, 86, 56, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(163, 86, 56, 0.05) 1px, transparent 1px);
+  }
 
-  body {
+  body.light .mode-btn.active {
+    background: rgba(163, 86, 56, 0.1);
+  }
+
+  body.light .key.fired {
+    background: rgba(163, 86, 56, 0.15);
+  }
+
+  body.light .gaze-dot {
+    background: rgba(163, 86, 56, 0.5);
+    box-shadow: 0 0 12px rgba(163, 86, 56, 0.4);
+  }
+
+body {
     background: var(--bg);
     color: var(--text);
     font-family: 'Sora', sans-serif;
-    min-height: 100vh;
+    height: 100vh; 
+    margin: 0;
+    padding: 12px 16px; 
+    box-sizing: border-box;
+    overflow: hidden; 
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 24px 16px;
-    gap: 20px;
-    overflow-x: hidden;
+    justify-content: center;
   }
 
-  /* Ambient grid background */
+  .app { 
+    position: relative; 
+    z-index: 1; 
+    width: 100%; 
+    max-width: 1100px;
+    height: 100%; 
+    display: flex;
+    flex-direction: column;
+    gap: 12px; 
+  }
+
+
+  header, .output-area, .prediction-bar, .mode-row {
+    flex-shrink: 0;
+  }
+
+
   body::before {
     content: '';
     position: fixed;
@@ -80,7 +127,7 @@
     z-index: 0;
   }
 
-  .app { position: relative; z-index: 1; width: 100%; max-width: 1100px; }
+  
 
   /* Header */
   header {
@@ -105,6 +152,7 @@
     align-items: center;
     justify-content: center;
     font-size: 18px;
+    color: white;
   }
 
   .logo-text {
@@ -164,7 +212,7 @@
     border: 1px solid var(--border);
     border-radius: 16px;
     padding: 16px 20px;
-    min-height: 90px;
+    min-height: 30px;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -218,8 +266,8 @@
     border: 1px solid var(--border);
     color: var(--text-dim);
     border-radius: 8px;
-    padding: 6px 12px;
-    font-size: 0.75rem;
+    padding: 10px 16px;
+    font-size: 0.9rem;
     font-family: 'Sora', sans-serif;
     cursor: pointer;
     transition: all 0.2s;
@@ -228,21 +276,24 @@
   .action-btn:hover { border-color: var(--accent); color: var(--accent); }
   .action-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
 
-  /* Keyboard container */
+
   .keyboard {
+    flex: 1; 
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px; 
+    min-height: 0; 
   }
 
   /* Keyboard row */
   .key-row {
+    flex: 1; 
     display: flex;
-    gap: 10px;
+    gap: 8px; 
     justify-content: center;
   }
 
-  /* Individual key */
+
   .key {
     position: relative;
     background: var(--key-bg);
@@ -256,7 +307,7 @@
     user-select: none;
     transition: border-color 0.15s, background 0.15s, transform 0.1s;
     overflow: hidden;
-    height: 72px;
+    height: 100%; /* Replaced height: 72px so it scales dynamically */
     flex: 1;
     min-width: 64px;
     gap: 2px;
@@ -376,9 +427,9 @@
     border-radius: 10px;
     color: var(--text-dim);
     font-family: 'Sora', sans-serif;
-    font-size: 0.78rem;
+    font-size: 1rem;
     font-weight: 600;
-    padding: 8px 20px;
+    padding: 12px 24px;
     cursor: pointer;
     transition: all 0.2s;
     text-transform: uppercase;
@@ -455,8 +506,8 @@
     background: var(--surface2);
     border: 2px solid var(--border);
     border-radius: 12px;
-    padding: 14px 22px;
-    font-size: 1.1rem;
+    padding: 10px 16px;
+    font-size: 0.9rem;
     font-family: 'DM Mono', monospace;
     cursor: pointer;
     color: var(--text-dim);
@@ -464,9 +515,9 @@
     position: relative;
     overflow: hidden;
     flex: 1;
-    min-width: 100px;
+    min-width: 80px;
     text-align: center;
-    min-height: 56px;
+    min-height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -504,8 +555,8 @@
     background: rgba(255, 204, 0, 0.1) !important;
   }
 
-  @media (max-width: 700px) {
-    .key { height: 60px; min-width: 44px; }
+@media (max-width: 700px) {
+    .key { min-width: 44px; height: 100%; } /* Removed hardcoded height */
     .key-label { font-size: 1.1rem; }
     .key-row { gap: 6px; }
     .keyboard { gap: 6px; }
@@ -522,25 +573,14 @@
       <div class="logo-text">Gaze<span>Type</span></div>
     </div>
     <div class="settings-row">
-      <button class="pill-btn active" id="gazeSimBtn" onclick="toggleGazeSim()">Gaze Sim</button>
-      <button class="pill-btn" id="scanBtn" onclick="toggleScanMode()">Scan Mode</button>
       <button class="pill-btn" id="themeBtn" onclick="toggleTheme()">☀️ Light</button>
       <div class="dwell-control">
         ⏱ Dwell:
-        <input type="range" id="dwellRange" min="600" max="3000" step="100" value="1200" oninput="updateDwell(this.value)">
-        <span id="dwellLabel">1.2s</span>
+        <input type="range" id="dwellRange" min="600" max="3000" step="100" value="2000" oninput="updateDwell(this.value)">
+        <span id="dwellLabel">2.0s</span>
       </div>
     </div>
   </header>
-
-  <!-- Status bar -->
-  <div class="status-bar">
-    <div class="status-indicator">
-      <div class="dot" id="statusDot"></div>
-      <span id="statusText">Gaze tracking active — hover or simulate gaze over a key to select</span>
-    </div>
-    <span id="charCount">0 chars</span>
-  </div>
 
   <!-- Output area -->
   <div class="output-area">
@@ -581,7 +621,7 @@
 <script>
 // ── State ──────────────────────────────────────────────
 let text = '';
-let dwellTime = 1200;
+let dwellTime = 2000;
 let currentMode = 'phrase';
 let gazeSimActive = true;
 let scanModeActive = false;
@@ -769,6 +809,7 @@ function updatePredictions() {
         parts[parts.length - 1] = word;
         text = parts.join(' ') + ' ';
       }
+      speakText(word);
       renderOutput();
       updatePredictions();
     });
@@ -827,6 +868,7 @@ function fireKey(k) {
   }
   if (action === 'delete') {
     text = text.slice(0, -1);
+    speakText('Deleted');
   } else if (action === 'space') {
     text += ' ';
   } else if (action === 'speak') {
@@ -843,11 +885,7 @@ function fireKey(k) {
     const phrase = action.replace('phrase-','');
     text += phrase + ' ';
     // Auto-speak the phrase immediately
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      const utt = new SpeechSynthesisUtterance(phrase);
-      window.speechSynthesis.speak(utt);
-    }
+    speakText(phrase);
     // Play alarm if "Help" was selected
     if (phrase.toLowerCase() === 'help') {
       playAlarm();
@@ -857,6 +895,7 @@ function fireKey(k) {
       ? (caps ? k.l.toUpperCase() : k.l.toLowerCase())
       : k.l;
     text += char;
+    speakText(char);
   }
 
   renderOutput();
@@ -1001,52 +1040,6 @@ function updateDwell(val) {
   document.documentElement.style.setProperty('--dwell-time', dwellTime + 'ms');
 }
 
-function toggleGazeSim() {
-  gazeSimActive = !gazeSimActive;
-  const btn = document.getElementById('gazeSimBtn');
-  const dot = document.getElementById('gazeDot');
-  const statusDot = document.getElementById('statusDot');
-  btn.classList.toggle('active', gazeSimActive);
-  dot.classList.toggle('active', gazeSimActive);
-  statusDot.classList.toggle('off', !gazeSimActive);
-  document.getElementById('statusText').textContent = gazeSimActive
-    ? 'Gaze tracking active — hover over a key to dwell-select'
-    : 'Gaze simulation off — click keys to select';
-}
-
-function toggleScanMode() {
-  scanModeActive = !scanModeActive;
-  const btn = document.getElementById('scanBtn');
-  btn.classList.toggle('active', scanModeActive);
-  if (scanModeActive) startScan(); else stopScan();
-}
-
-function startScan() {
-  const keys = document.querySelectorAll('.key');
-  scanIndex = 0;
-  function highlight() {
-    keys.forEach(k => k.classList.remove('scan-highlight'));
-    if (!scanModeActive) return;
-    if (keys[scanIndex]) keys[scanIndex].classList.add('scan-highlight');
-    scanIndex = (scanIndex + 1) % keys.length;
-    scanTimer = setTimeout(highlight, 800);
-  }
-  highlight();
-  document.addEventListener('keydown', handleScanSelect);
-}
-
-function stopScan() {
-  if (scanTimer) clearTimeout(scanTimer);
-  document.querySelectorAll('.key').forEach(k => k.classList.remove('scan-highlight'));
-  document.removeEventListener('keydown', handleScanSelect);
-}
-
-function handleScanSelect(e) {
-  if (e.code === 'Space' || e.code === 'Enter') {
-    const highlighted = document.querySelector('.key.scan-highlight');
-    if (highlighted) highlighted.click();
-  }
-}
 
 function switchMode(mode) {
   currentMode = mode;
@@ -1062,17 +1055,18 @@ function copyText() {
   navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard!'));
 }
 
-function speakText() {
-  if (!text || !window.speechSynthesis) return;
-  const utt = new SpeechSynthesisUtterance(text);
+function speakText(txt = text) {
+  if (!txt || !window.speechSynthesis) return;
+  const utt = new SpeechSynthesisUtterance(txt);
   window.speechSynthesis.speak(utt);
-  showToast('Speaking…');
+  if (txt === text) showToast('Speaking…');
 }
 
 function clearAll() {
   text = '';
   renderOutput();
   updatePredictions();
+  speakText('Text cleared');
   showToast('Text cleared');
 }
 
@@ -1082,14 +1076,6 @@ function showToast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2000);
 }
-
-// ── Gaze dot tracking ──────────────────────────────────
-document.addEventListener('mousemove', e => {
-  if (!gazeSimActive) return;
-  const dot = document.getElementById('gazeDot');
-  dot.style.left = e.clientX + 'px';
-  dot.style.top = e.clientY + 'px';
-});
 
 // ── Init ───────────────────────────────────────────────
 buildKeyboard();
