@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GazeType — Accessible Eye Gaze Keyboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;600;700&display=swap');
+
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --border: #30363d;
+    --accent: #00e5a0;
+    --accent2: #0095ff;
+    --danger: #ff5f72;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --key-bg: #1c2128;
+    --key-hover: #2d333b;
+    --key-active: #00e5a0;
+    --dwell-time: 1200ms;
+    --key-radius: 14px;
+    --glow: 0 0 20px rgba(0,229,160,0.3);
+    --key-special-bg: #1a2030;
+    --key-special-border: #2a3a5a;
+    --key-action-bg: #1e1a2e;
+    --key-action-border: #3a2a5a;
+    --key-delete-bg: #2a1a1a;
+    --key-delete-border: #5a2a2a;
+  }
+
+body.light {
+    --bg: #e6dfd3; 
+    --surface: #f0ebe1;
+    --surface2: #ded5c5;
+    --border: #c8bca7; 
+    --accent: #a35638; 
+    --accent2: #8a6343;
+    --danger: #b34d4d; 
+    --text: #4a4036; 
+    --text-dim: #7d7265;
+    
+    --key-bg: #f0ebe1; 
+    --key-hover: #e3d9c8;
+    --key-special-bg: #e8e0ce;
+    --key-special-border: #d1c4ae;
+    --key-action-bg: #e6d8d8;
+    --key-action-border: #c9a7a7;
+    --key-delete-bg: #ebd4d4;
+    --key-delete-border: #d4abab;
+    --glow: 0 0 15px rgba(163, 86, 56, 0.15);
+  }
+
+  body.light .dwell-fill {
+    background: linear-gradient(to top, rgba(163, 86, 56, 0.25), rgba(163, 86, 56, 0.05)) !important;
+  }
+  body.light .pred-word .dwell-fill {
+    background: linear-gradient(to top, rgba(138, 99, 67, 0.25), rgba(138, 99, 67, 0.05)) !important;
+  }
+  body.light .dwell-outline {
+    border-color: rgba(163, 86, 56, 0.6) !important;
+  }
+  body.light .pred-word .dwell-outline {
+    border-color: rgba(138, 99, 67, 0.6) !important;
+  }
+  
+  body.light::before {
+    background-image:
+      linear-gradient(rgba(163, 86, 56, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(163, 86, 56, 0.05) 1px, transparent 1px);
+  }
+
+  body.light .mode-btn.active {
+    background: rgba(163, 86, 56, 0.1);
+  }
+
+  body.light .key.fired {
+    background: rgba(163, 86, 56, 0.15);
+  }
+
+  body.light .gaze-dot {
+    background: rgba(163, 86, 56, 0.5);
+    box-shadow: 0 0 12px rgba(163, 86, 56, 0.4);
+  }
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    height: 100vh; 
+    margin: 0;
+    padding: 12px 16px; 
+    box-sizing: border-box;
+    overflow: hidden; 
+    display: flex;
+    justify-content: center;
+  }
+
+  .app { 
+    position: relative; 
+    z-index: 1; 
+    width: 100%; 
+    max-width: 1100px;
+    height: 100%; 
+    display: flex;
+    flex-direction: column;
+    gap: 12px; 
+  }
+
+
+  header, .output-area, .prediction-bar, .mode-row {
+    flex-shrink: 0;
+  }
+
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: white;
+  }
+
+  .logo-text {
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .settings-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .pill-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .pill-btn:hover, .pill-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Dwell time slider */
+  .dwell-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+  }
+
+  .dwell-control input[type=range] {
+    width: 80px;
+    accent-color: var(--accent);
+  }
+
+  .dwell-control span { color: var(--accent); font-family: 'DM Mono', monospace; min-width: 40px; }
+
+  /* Text output display */
+  .output-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 20px;
+    min-height: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .output-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+  }
+
+  .output-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.4rem;
+    letter-spacing: 1px;
+    color: var(--text);
+    min-height: 36px;
+    word-break: break-all;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+
+  .cursor {
+    display: inline-block;
+    width: 3px;
+    height: 1.3em;
+    background: var(--accent);
+    border-radius: 2px;
+    animation: blink 1s step-end infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  .output-actions {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 6px;
+  }
+
+  .action-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    font-family: 'Sora', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .action-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+
+  .keyboard {
+    flex: 1; 
+    display: flex;
+    flex-direction: column;
+    gap: 8px; 
+    min-height: 0; 
+  }
+
+  /* Keyboard row */
+  .key-row {
+    flex: 1; 
+    display: flex;
+    gap: 8px; 
+    justify-content: center;
+  }
+
+
+  .key {
+    position: relative;
+    background: var(--key-bg);
+    border: 2px solid var(--border);
+    border-radius: var(--key-radius);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    overflow: hidden;
+    height: 100%; /* Replaced height: 72px so it scales dynamically */
+    flex: 1;
+    min-width: 64px;
+    gap: 2px;
+  }
+
+  .key.wide { flex: 2; }
+  .key.extra-wide { flex: 3; }
+  .key.space-key { flex: 5; }
+
+  .key-label {
+    font-size: 1.35rem;
+    font-weight: 600;
+    line-height: 1;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .key-sub {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .key-icon {
+    font-size: 1.5rem;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* Dwell progress ring */
+  .dwell-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: calc(var(--key-radius) - 2px);
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .dwell-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 0%;
+    background: linear-gradient(to top, rgba(0,229,160,0.25), rgba(0,229,160,0.05));
+    transition: height linear;
+    border-radius: 0 0 calc(var(--key-radius) - 2px) calc(var(--key-radius) - 2px);
+  }
+
+  .dwell-outline {
+    position: absolute;
+    inset: 0;
+    border: 3px solid var(--accent);
+    border-radius: calc(var(--key-radius) - 2px);
+    opacity: 0;
+    box-shadow: var(--glow);
+    transition: opacity 0.15s;
+  }
+
+  /* Hover state */
+  .key:hover {
+    border-color: var(--accent);
+    background: var(--key-hover);
+  }
+
+  .key:hover .dwell-outline { opacity: 0.6; }
+
+  /* Active state */
+  .key.dwelling .dwell-outline { opacity: 1; }
+
+  /* Fired state */
+  .key.fired {
+    background: rgba(0,229,160,0.15);
+    border-color: var(--accent);
+    transform: scale(0.96);
+  }
+
+  /* Special key variants */
+  .key.key-special {
+    background: var(--key-special-bg);
+    border-color: var(--key-special-border);
+  }
+
+  .key.key-special .key-label { color: var(--accent2); font-size: 1rem; font-weight: 500; }
+
+  .key.key-action {
+    background: var(--key-action-bg);
+    border-color: var(--key-action-border);
+  }
+
+  .key.key-action .key-icon { font-size: 1.3rem; }
+
+  .key.key-delete {
+    background: var(--key-delete-bg);
+    border-color: var(--key-delete-border);
+  }
+
+  .key.key-delete:hover { border-color: var(--danger); background: rgba(255,95,114,0.1); }
+  .key.key-delete:hover .dwell-outline { border-color: var(--danger); box-shadow: 0 0 20px rgba(255,95,114,0.3); }
+  .key.key-delete .key-icon { color: var(--danger); }
+
+  .key.key-space { background: var(--surface2); }
+
+  /* Mode toggle row */
+  .mode-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .mode-btn {
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-dim);
+    font-family: 'Sora', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 12px 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+
+  .mode-btn.active {
+    background: rgba(0,229,160,0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Gaze cursor simulator */
+  .gaze-dot {
+    position: fixed;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: rgba(0,229,160,0.6);
+    border: 2px solid var(--accent);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    transition: left 0.08s ease-out, top 0.08s ease-out;
+    z-index: 9999;
+    box-shadow: 0 0 12px rgba(0,229,160,0.5);
+    display: none;
+  }
+
+  .gaze-dot.active { display: block; }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+  }
+
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  .dot.off { background: var(--border); animation: none; }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  /* Prediction bar */
+  .prediction-bar {
+    display: flex;
+    gap: 8px;
+    padding: 4px 0;
+    flex-wrap: wrap;
+  }
+
+  .pred-word {
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    font-family: 'DM Mono', monospace;
+    cursor: pointer;
+    color: var(--text-dim);
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    flex: 1;
+    min-width: 80px;
+    text-align: center;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pred-word:hover, .pred-word.dwelling {
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+
+  .pred-word .dwell-fill { background: linear-gradient(to top, rgba(0,149,255,0.2), rgba(0,149,255,0.05)); }
+  .pred-word .dwell-outline { border-color: var(--accent2); box-shadow: 0 0 15px rgba(0,149,255,0.3); }
+
+  /* Notification toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 0.85rem;
+    color: var(--accent);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Scan mode highlight */
+  .key.scan-highlight {
+    border-color: #ffcc00 !important;
+    background: rgba(255, 204, 0, 0.1) !important;
+  }
+
+@media (max-width: 700px) {
+    .key { min-width: 44px; height: 100%; } /* Removed hardcoded height */
+    .key-label { font-size: 1.1rem; }
+    .key-row { gap: 6px; }
+    .keyboard { gap: 6px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">👁</div>
+      <div class="logo-text">Gaze<span>Type</span></div>
+    </div>
+    <div class="settings-row">
+      <button class="pill-btn" id="themeBtn" onclick="toggleTheme()">☀️ Light</button>
+      <div class="dwell-control">
+        ⏱ Dwell:
+        <input type="range" id="dwellRange" min="600" max="3000" step="100" value="2000" oninput="updateDwell(this.value)">
+        <span id="dwellLabel">2.0s</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Output area -->
+  <div class="output-area">
+    <div class="output-label">Composed text</div>
+    <div class="output-text" id="outputText"><span class="cursor"></span></div>
+    <div class="output-actions">
+      <button class="action-btn" onclick="copyText()">Copy</button>
+      <button class="action-btn" onclick="speakText()">🔊 Speak</button>
+      <button class="action-btn danger" onclick="clearAll()">Clear</button>
+    </div>
+  </div>
+
+  <!-- Word prediction bar -->
+  <div class="prediction-bar" id="predBar">
+    <div class="pred-word" data-word="">
+      <span>—</span>
+      <div class="dwell-ring"><div class="dwell-fill"></div><div class="dwell-outline"></div></div>
+    </div>
+  </div>
+
+  <!-- Mode switcher -->
+  <div class="mode-row">
+    <button class="mode-btn active" onclick="switchMode('alpha')" id="mode-alpha">ABC</button>
+    <button class="mode-btn" onclick="switchMode('num')" id="mode-num">123</button>
+    <button class="mode-btn" onclick="switchMode('sym')" id="mode-sym">!@#</button>
+    <button class="mode-btn" onclick="switchMode('phrase')" id="mode-phrase">Phrases</button>
+  </div>
+
+  <!-- Keyboard area -->
+  <div class="keyboard" id="keyboard"></div>
+
+</div>
+
+<!-- Gaze dot -->
+<div class="gaze-dot" id="gazeDot"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────
+let text = '';
+let dwellTime = 2000;
+let currentMode = 'phrase';
+let gazeSimActive = true;
+let scanModeActive = false;
+let scanIndex = 0;
+let scanTimer = null;
+let caps = false;
+
+// ── Layouts ────────────────────────────────────────────
+const layouts = {
+  alpha: [
+    [
+      {l:'Q'},{l:'W'},{l:'E'},{l:'R'},{l:'T'},{l:'Y'},{l:'U'},{l:'I'},{l:'O'},{l:'P'}
+    ],
+    [
+      {l:'A'},{l:'S'},{l:'D'},{l:'F'},{l:'G'},{l:'H'},{l:'J'},{l:'K'},{l:'L'}
+    ],
+    [
+      {l:'⇧', cls:'key-action', icon:true, action:'caps', sub:'Caps'},
+      {l:'Z'},{l:'X'},{l:'C'},{l:'V'},{l:'B'},{l:'N'},{l:'M'},
+      {l:'⌫', cls:'key-delete', icon:true, action:'delete', sub:'Delete'}
+    ],
+    [
+      {l:'123', cls:'key-special', wide:true, action:'mode-num', sub:'Numbers'},
+      {l:'⎵', cls:'key-space space-key', icon:true, action:'space', sub:'Space'},
+      {l:'!@#', cls:'key-special', wide:true, action:'mode-sym', sub:'Symbols'},
+      {l:'🔊', cls:'key-action', icon:true, action:'speak', sub:'Speak'}
+    ]
+  ],
+  num: [
+    [{l:'1'},{l:'2'},{l:'3'},{l:'4'},{l:'5'},{l:'6'},{l:'7'},{l:'8'},{l:'9'},{l:'0'}],
+    [{l:'.'},{l:','},{l:':'},{l:';'},{l:'/'},{l:'\\'},{l:'('},{l:')'},{l:'%'}],
+    [
+      {l:'+'},{l:'-'},{l:'='},{l:'*'},{l:'<'},{l:'>'},{l:'#'},{l:'@'},
+      {l:'⌫', cls:'key-delete', icon:true, action:'delete', sub:'Delete'}
+    ],
+    [
+      {l:'ABC', cls:'key-special', wide:true, action:'mode-alpha', sub:'Letters'},
+      {l:'⎵', cls:'key-space space-key', icon:true, action:'space', sub:'Space'},
+      {l:'!@#', cls:'key-special', wide:true, action:'mode-sym', sub:'Symbols'},
+      {l:'🔊', cls:'key-action', icon:true, action:'speak', sub:'Speak'}
+    ]
+  ],
+  sym: [
+    [{l:'!'},{l:'?'},{l:'"'},{l:"'"},{l:'`'},{l:'~'},{l:'^'},{l:'|'},{l:'_'},{l:'&'}],
+    [{l:'{'},{l:'}'},{l:'['},{l:']'},{l:'$'},{l:'€'},{l:'£'},{l:'¥'},{l:'©'}],
+    [
+      {l:'®'},{l:'™'},{l:'…'},{l:'—'},{l:'–'},{l:'°'},{l:'±'},{l:'×'},
+      {l:'⌫', cls:'key-delete', icon:true, action:'delete', sub:'Delete'}
+    ],
+    [
+      {l:'ABC', cls:'key-special', wide:true, action:'mode-alpha', sub:'Letters'},
+      {l:'⎵', cls:'key-space space-key', icon:true, action:'space', sub:'Space'},
+      {l:'123', cls:'key-special', wide:true, action:'mode-num', sub:'Numbers'},
+      {l:'🔊', cls:'key-action', icon:true, action:'speak', sub:'Speak'}
+    ]
+  ],
+  phrase: [
+    [
+      {l:'Yes', cls:'key-special extra-wide', action:'phrase-Yes'},
+      {l:'No', cls:'key-special extra-wide', action:'phrase-No'},
+      {l:'Help', cls:'key-special extra-wide', action:'phrase-Help'}
+    ],
+    [
+      {l:'I need water', cls:'key-special', wide:true, action:'phrase-I need water'},
+      {l:'I am in pain', cls:'key-special', wide:true, action:'phrase-I am in pain'},
+      {l:'📞 CALL', cls:'key-delete', wide:true, action:'trigger-app-py'}
+    ],
+    [
+      {l:'I am tired', cls:'key-special', wide:true, action:'phrase-I am tired'},
+      {l:'Thank you', cls:'key-special', wide:true, action:'phrase-Thank you'},
+      {l:'Please wait', cls:'key-special', wide:true, action:'phrase-Please wait'}
+    ],
+    [
+      {l:'Turn off lights', cls:'key-special', wide:true, action:'phrase-Turn off lights'},
+      {l:'I am okay', cls:'key-special', wide:true, action:'phrase-I am okay'},
+      
+    ],
+    [
+      {l:'ABC', cls:'key-special', wide:true, action:'mode-alpha', sub:'Letters'},
+      {l:'⎵', cls:'key-space space-key', icon:true, action:'space', sub:'Space'},
+      {l:'⌫', cls:'key-delete', icon:true, action:'delete', sub:'Delete'},
+      {l:'🔊', cls:'key-action', icon:true, action:'speak', sub:'Speak'}
+    ]
+  ]
+};
+
+// ── N-gram Word Prediction Model ───────────────────────
+// Bigram frequency table: given last word → ranked next-word suggestions
+const bigramModel = {
+  'i':       ['am','need','want','feel','think','can','would','have'],
+  'am':      ['okay','in','tired','happy','sorry','not','feeling'],
+  'in':      ['pain','the','a','need','here'],
+  'need':    ['water','help','medicine','a','to','rest','food'],
+  'call':    ['doctor','family','nurse','help','me'],
+  'i am':    ['okay','in','tired','sorry','here'],
+  'please':  ['wait','help','call','come','hurry'],
+  'thank':   ['you'],
+  'i need':  ['water','help','medicine','rest','food','a'],
+  'can':     ['you','i','we','please','help'],
+  'turn':    ['off','on','down','up'],
+  'feel':    ['pain','sick','tired','better','okay'],
+  'help':    ['me','please','now'],
+  'not':     ['okay','feeling','sure','now','well'],
+  'want':    ['water','food','rest','help','to'],
+  'yes':     ['please','i','that','okay'],
+  'no':      ['please','i','not','thank'],
+  'it':      ['is','hurts','feels','was'],
+  'the':     ['doctor','pain','nurse','time','light'],
+  'a':       ['doctor','nurse','moment','little'],
+  'my':      ['head','arm','leg','back','chest','stomach'],
+  'hurts':   ['here','a','lot','badly'],
+  'come':    ['here','please','now','back'],
+};
+
+// Fallback frequency list (most common communication words)
+const commonWords = [
+  'yes','no','help','please','okay','water','pain','tired',
+  'thank','you','call','need','want','feel','here','now',
+  'doctor','nurse','family','come','wait','sorry','better',
+  'food','rest','light','time','more','stop','not','can',
+  'sick','good','bad','hurts','medicine','my','head','back'
+];
+
+function getPredictions(inputText) {
+  const trimmed = inputText.trimEnd().toLowerCase();
+  const words = trimmed.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return commonWords.slice(0, 5);
+
+  const lastWord = words[words.length - 1];
+  const lastTwo = words.slice(-2).join(' ');
+  const partial = inputText.endsWith(' ') ? '' : lastWord;
+
+  // If still typing current word — prefix-match from all known vocab
+  if (partial) {
+    const vocab = [...new Set([
+      ...Object.keys(bigramModel),
+      ...Object.values(bigramModel).flat(),
+      ...commonWords
+    ])];
+    return vocab
+      .filter(w => w.startsWith(partial) && w !== partial)
+      .sort((a, b) => {
+        // Prefer shorter completions and common words
+        const aCommon = commonWords.indexOf(a);
+        const bCommon = commonWords.indexOf(b);
+        if (aCommon !== -1 && bCommon === -1) return -1;
+        if (bCommon !== -1 && aCommon === -1) return 1;
+        return a.length - b.length;
+      })
+      .slice(0, 5);
+  }
+
+  // Word just completed — predict next word using bigrams then unigrams
+  const bigramHits = bigramModel[lastTwo] || bigramModel[lastWord] || [];
+  const combined = [...new Set([...bigramHits, ...commonWords])];
+  // Exclude words already typed recently
+  const recent = new Set(words.slice(-4));
+  return combined.filter(w => !recent.has(w)).slice(0, 5);
+}
+
+function updatePredictions() {
+  const predBar = document.getElementById('predBar');
+  const preds = getPredictions(text);
+
+  if (preds.length === 0) {
+    predBar.innerHTML = '<div style="color:var(--text-dim);font-size:0.78rem;padding:8px 12px;">Type to see word predictions…</div>';
+    return;
+  }
+
+  predBar.innerHTML = preds.map(w => `
+    <div class="pred-word" data-word="${w}">
+      <span>${w}</span>
+      <div class="dwell-ring"><div class="dwell-fill"></div><div class="dwell-outline"></div></div>
+    </div>
+  `).join('');
+
+  predBar.querySelectorAll('.pred-word').forEach(el => {
+    attachDwell(el, () => {
+      const word = el.dataset.word;
+      const endsWithSpace = text.endsWith(' ') || text === '';
+      if (endsWithSpace) {
+        text += word + ' ';
+      } else {
+        const parts = text.split(' ');
+        parts[parts.length - 1] = word;
+        text = parts.join(' ') + ' ';
+      }
+      speakText(word);
+      renderOutput();
+      updatePredictions();
+    });
+  });
+}
+
+// ── Build keyboard ─────────────────────────────────────
+function buildKeyboard() {
+  const kb = document.getElementById('keyboard');
+  kb.innerHTML = '';
+  const rows = layouts[currentMode];
+
+  rows.forEach(row => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'key-row';
+
+    row.forEach(k => {
+      const key = document.createElement('div');
+      let cls = 'key';
+      if (k.cls) cls += ' ' + k.cls;
+      if (k.wide && !k.cls?.includes('wide')) cls += ' wide';
+      if (k.cls?.includes('extra-wide')) { /* already set */ }
+      if (k.cls?.includes('space-key')) { /* keep */ }
+      key.className = cls;
+
+      const displayLabel = (currentMode === 'alpha' && !k.action && k.l.length === 1)
+        ? (caps ? k.l.toUpperCase() : k.l.toLowerCase())
+        : k.l;
+
+      if (k.icon) {
+        key.innerHTML = `<div class="key-icon">${displayLabel}</div>${k.sub ? `<div class="key-sub">${k.sub}</div>` : ''}`;
+      } else {
+        key.innerHTML = `<div class="key-label">${displayLabel}</div>${k.sub ? `<div class="key-sub">${k.sub}</div>` : ''}`;
+      }
+
+      // Dwell ring
+      key.innerHTML += `<div class="dwell-ring"><div class="dwell-fill"></div><div class="dwell-outline"></div></div>`;
+
+      attachDwell(key, () => fireKey(k));
+      rowEl.appendChild(key);
+    });
+
+    kb.appendChild(rowEl);
+  });
+}
+
+// ── Key firing ─────────────────────────────────────────
+function fireKey(k) {
+  const action = k.action;
+
+  if (action === 'trigger-app-py') {
+    if (window.pywebview) {
+        window.pywebview.api.launch_call_assistant();
+    }
+    return;
+  }
+  if (action === 'delete') {
+    text = text.slice(0, -1);
+    speakText('Deleted');
+  } else if (action === 'space') {
+    text += ' ';
+  } else if (action === 'speak') {
+    speakText();
+    return;
+  } else if (action === 'caps') {
+    caps = !caps;
+    buildKeyboard();
+    return;
+  } else if (action && action.startsWith('mode-')) {
+    switchMode(action.replace('mode-',''));
+    return;
+  } else if (action && action.startsWith('phrase-')) {
+    const phrase = action.replace('phrase-','');
+    text += phrase + ' ';
+    // Auto-speak the phrase immediately
+    speakText(phrase);
+    // Play alarm if "Help" was selected
+    if (phrase.toLowerCase() === 'help') {
+      playAlarm();
+    }
+  } else {
+    const char = (currentMode === 'alpha' && k.l.length === 1)
+      ? (caps ? k.l.toUpperCase() : k.l.toLowerCase())
+      : k.l;
+    text += char;
+    speakText(char);
+  }
+
+  renderOutput();
+  updatePredictions();
+}
+
+// ── Render output ──────────────────────────────────────
+function renderOutput() {
+  const el = document.getElementById('outputText');
+  const escaped = text.replace(/\n/g, ' ↵ ');
+  el.innerHTML = `${escaped}<span class="cursor"></span>`;
+  document.getElementById('charCount').textContent = text.length + ' chars';
+}
+
+// ── Dwell mechanics ────────────────────────────────────
+function attachDwell(el, callback) {
+  let timer = null;
+  let startTime = null;
+  let animFrame = null;
+
+  const fill = el.querySelector('.dwell-fill');
+  const outline = el.querySelector('.dwell-outline');
+
+  function startDwell() {
+    if (timer) return;
+    el.classList.add('dwelling');
+    startTime = Date.now();
+
+    function animate() {
+      const elapsed = Date.now() - startTime;
+      const pct = Math.min((elapsed / dwellTime) * 100, 100);
+      if (fill) fill.style.height = pct + '%';
+      if (pct < 100) animFrame = requestAnimationFrame(animate);
+    }
+    animFrame = requestAnimationFrame(animate);
+
+    timer = setTimeout(() => {
+      el.classList.remove('dwelling');
+      el.classList.add('fired');
+      if (fill) fill.style.height = '0%';
+      setTimeout(() => el.classList.remove('fired'), 300);
+      callback();
+      cancelAnimationFrame(animFrame);
+      timer = null;
+    }, dwellTime);
+  }
+
+  function stopDwell() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+    el.classList.remove('dwelling');
+    if (fill) fill.style.height = '0%';
+  }
+
+  el.addEventListener('mouseenter', startDwell);
+  el.addEventListener('mouseleave', stopDwell);
+  el.addEventListener('click', () => { stopDwell(); callback(); });
+}
+
+// ── Alarm sound (for Help key) ─────────────────────────
+function playAlarm() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const totalDuration = 3; // seconds
+  const beepDuration = 0.18;
+  const beepGap = 0.10;
+  const freq = 880;
+  const now = ctx.currentTime;
+
+  for (let i = 0; i < 8; i++) {
+    const start = now + i * (beepDuration + beepGap);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(freq, start);
+    osc.frequency.setValueAtTime(freq * 1.25, start + beepDuration * 0.5);
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(0.55, start + 0.01);
+    gain.gain.setValueAtTime(0.55, start + beepDuration - 0.02);
+    gain.gain.linearRampToValueAtTime(0, start + beepDuration);
+    osc.start(start);
+    osc.stop(start + beepDuration);
+  }
+  showToast('🚨 HELP alarm triggered!');
+}
+
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  const btn = document.getElementById('themeBtn');
+  btn.textContent = isLight ? '🌙 Dark' : '☀️ Light';
+  btn.classList.toggle('active', isLight);
+}
+
+// ── Apply dwell to non-keyboard interactive elements ───
+function applyDwellToUI() {
+  // Header pill buttons
+  document.querySelectorAll('.pill-btn').forEach(btn => {
+    // Avoid double-attaching
+    if (btn.dataset.dwellAttached) return;
+    btn.dataset.dwellAttached = '1';
+    btn.style.position = 'relative';
+    btn.style.overflow = 'hidden';
+    const ring = document.createElement('div');
+    ring.className = 'dwell-ring';
+    ring.innerHTML = '<div class="dwell-fill"></div><div class="dwell-outline"></div>';
+    btn.appendChild(ring);
+    attachDwell(btn, () => btn.click());
+  });
+
+  // Mode buttons
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    if (btn.dataset.dwellAttached) return;
+    btn.dataset.dwellAttached = '1';
+    btn.style.position = 'relative';
+    btn.style.overflow = 'hidden';
+    const ring = document.createElement('div');
+    ring.className = 'dwell-ring';
+    ring.innerHTML = '<div class="dwell-fill"></div><div class="dwell-outline"></div>';
+    btn.appendChild(ring);
+    attachDwell(btn, () => btn.click());
+  });
+
+  // Output action buttons (Copy, Speak, Clear)
+  document.querySelectorAll('.action-btn').forEach(btn => {
+    if (btn.dataset.dwellAttached) return;
+    btn.dataset.dwellAttached = '1';
+    btn.style.position = 'relative';
+    btn.style.overflow = 'hidden';
+    const ring = document.createElement('div');
+    ring.className = 'dwell-ring';
+    ring.innerHTML = '<div class="dwell-fill"></div><div class="dwell-outline"></div>';
+    btn.appendChild(ring);
+    attachDwell(btn, () => btn.click());
+  });
+}
+
+// ── Settings ───────────────────────────────────────────
+function updateDwell(val) {
+  dwellTime = parseInt(val);
+  document.getElementById('dwellLabel').textContent = (dwellTime/1000).toFixed(1) + 's';
+  document.documentElement.style.setProperty('--dwell-time', dwellTime + 'ms');
+}
+
+
+function switchMode(mode) {
+  currentMode = mode;
+  ['alpha','num','sym','phrase'].forEach(m => {
+    document.getElementById('mode-' + m)?.classList.toggle('active', m === mode);
+  });
+  buildKeyboard();
+  applyDwellToUI();
+}
+
+function copyText() {
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard!'));
+}
+
+function speakText(txt = text) {
+  if (!txt || !window.speechSynthesis) return;
+  const utt = new SpeechSynthesisUtterance(txt);
+  window.speechSynthesis.speak(utt);
+  if (txt === text) showToast('Speaking…');
+}
+
+function clearAll() {
+  text = '';
+  renderOutput();
+  updatePredictions();
+  speakText('Text cleared');
+  showToast('Text cleared');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ── Init ───────────────────────────────────────────────
+buildKeyboard();
+updatePredictions();
+renderOutput();
+applyDwellToUI();
+
+// Show gaze dot by default
+document.getElementById('gazeDot').classList.add('active');
+</script>
+</body>
+</html>
