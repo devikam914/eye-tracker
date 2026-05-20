@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿
 import cv2
 import numpy as np
 import mediapipe as mp
@@ -59,11 +59,9 @@ class FaceLandmarkDetector:
         l_rx = sdiv(l_iris[0] - l_outer[0], l_ew)
         r_rx = sdiv(r_iris[0] - r_inner[0], r_ew)
 
-        # Y relative to eye corner midpoint: far more stable across lid positions
-        l_mid_y = (l_outer[1] + l_inner[1]) / 2.0
-        r_mid_y = (r_outer[1] + r_inner[1]) / 2.0
-        l_ry = sdiv(l_iris[1] - l_mid_y, l_ew)
-        r_ry = sdiv(r_iris[1] - r_mid_y, r_ew)
+        # Y relative to inner canthus: bone-anchored, eyelid-independent
+        l_ry = sdiv(l_iris[1] - l_inner[1], l_ew)
+        r_ry = sdiv(r_iris[1] - r_inner[1], r_ew)
 
         total_w = max(l_ew + r_ew, 1e-6)
         gaze_x  = (l_rx * l_ew + r_rx * r_ew) / total_w

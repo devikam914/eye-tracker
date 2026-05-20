@@ -7,6 +7,7 @@ let FAMILY_NAME = 'Family'; // Default name
 let dwellTimer = null;
 let currentCard = null;
 let dwellTime = 1.5; // seconds
+let isDarkMode = false;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadFamilyContact();
     setupDwellTracking();
     updateFamilyNumber();
+    setupThemeToggle();
 });
 
 // Load settings
@@ -22,7 +24,33 @@ function loadSettings() {
     if (saved) {
         const settings = JSON.parse(saved);
         dwellTime = settings.dwellTime || 1.5;
+        isDarkMode = settings.darkMode || false;
+        
+        if (isDarkMode) {
+            document.body.classList.add('dark-mode');
+            document.getElementById('theme-toggle').checked = false;
+        } else {
+            document.body.classList.remove('dark-mode');
+            document.getElementById('theme-toggle').checked = true;
+        }
     }
+}
+
+// Setup theme toggle
+function setupThemeToggle() {
+    const toggle = document.getElementById('theme-toggle');
+    
+    toggle.addEventListener('change', (e) => {
+        isDarkMode = !e.target.checked;
+        document.body.classList.toggle('dark-mode', isDarkMode);
+        
+        // Save to settings
+        const settings = JSON.parse(localStorage.getItem('gazeSettings') || '{}');
+        settings.darkMode = isDarkMode;
+        localStorage.setItem('gazeSettings', JSON.stringify(settings));
+        
+        playFeedback();
+    });
 }
 
 // Load family contact from settings

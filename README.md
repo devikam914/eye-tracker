@@ -30,6 +30,7 @@ A beautiful, accessible web-based interface for assistive communication and cont
 ### Prerequisites
 - Python 3.8 or higher
 - Windows OS (for Phone Link integration)
+- Webcam (for integrated eye tracking version)
 
 ### Installation
 
@@ -40,14 +41,57 @@ cd eye-tracker
 ```
 
 2. **Install dependencies**
+
+For UI-only version:
 ```bash
 pip install -r requirements.txt
 ```
 
+For integrated eye tracking version:
+```bash
+pip install -r requirements_integrated.txt
+```
+
 3. **Run the application**
+
+**UI-Only Version (No Eye Tracking):**
 ```bash
 python "eye tracker/web_ui_standalone.py"
 ```
+
+**Integrated Version (With Eye Tracking):**
+
+Auto-calibration mode (default - calibration starts automatically):
+```bash
+python "eye tracker/web_ui_controller_integrated.py"
+# Or double-click: launch_integrated.bat
+```
+
+Demo mode (manual calibration - click button to start):
+```bash
+python "eye tracker/web_ui_controller_integrated.py" --no-demo
+# Or double-click: launch_integrated_demo.bat
+```
+
+### Calibration Process
+
+When using the integrated eye tracking version with auto-calibration:
+
+1. **Pass 1: 49-point grid calibration** (7x7 grid)
+   - Look at each dot as it appears
+   - Keep your head still
+   - Takes about 2-3 minutes
+
+2. **Pass 2: 16-point residual correction** (4x4 grid)
+   - Corrects session-based offset
+   - Improves accuracy
+   - Takes about 1 minute
+
+3. **Tracking starts automatically** after calibration
+   - Look at buttons to hover
+   - Dwell (hold gaze) to click
+   - Default dwell time: 1.5 seconds
+
 
 That's it! The UI will open in fullscreen mode.
 

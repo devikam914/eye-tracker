@@ -240,3 +240,96 @@ document.addEventListener('contextmenu', (e) => {
 document.addEventListener('selectstart', (e) => {
     e.preventDefault();
 });
+
+
+// ============================================================================
+// EYE TRACKING CALIBRATION
+// ============================================================================
+
+function startCalibration() {
+    const btn = document.getElementById('calibration-btn');
+    const text = document.getElementById('calibration-text');
+    const status = document.getElementById('tracking-status');
+    const statusText = document.getElementById('status-text');
+    
+    // Update UI to show calibration in progress
+    btn.classList.add('calibrating');
+    text.textContent = 'Calibrating... Follow the dots';
+    statusText.textContent = 'Calibrating...';
+    
+    // Call Python backend to start calibration
+    if (window.pywebview && window.pywebview.api) {
+        window.pywebview.api.start_calibration().then(response => {
+            console.log('Calibration started:', response);
+            
+            // Poll for calibration status
+            checkTrackingStatus();
+        }).catch(error => {
+            console.error('Calibration error:', error);
+            btn.classList.remove('calibrating');
+            text.textContent = 'Calibration Failed - Try Again';
+            statusText.textContent = 'Error';
+        });
+    } else {
+        // Fallback for testing without backend
+        console.log('Calibration started (demo mode)');
+        setTimeout(() => {
+            btn.classList.remove('calibrating');
+            btn.classList.add('calibrated');
+            text.textContent = '✓ Eye Tracking Active';
+            status.classList.add('calibrated', 'tracking');
+            statusText.textContent = 'Tracking Active';
+        }, 3000);
+    }
+}
+
+function checkTrackingStatus() {
+    if (window.pywebview && window.pywebview.api) {
+        window.pywebview.api.get_tracking_status().then(status => {
+            const btn = document.getElementById('calibration-btn');
+            const text = document.getElementById('calibration-text');
+            const statusDiv = document.getElementById('tracking-status');
+            const statusText = document.getElementById('status-text');
+            
+            if (status.calibrated && status.running) {
+                // Calibration complete and tracking active
+                btn.classList.remove('calibrating');
+                btn.classList.add('calibrated');
+                text.textContent = '✓ Eye Tracking Active';
+                statusDiv.classList.add('calibrated', 'tracking');
+                statusText.textContent = status.paused ? 'Paused' : 'Tracking Active';
+            } else if (status.calibrated) {
+                // Calibrated but not tracking
+                btn.classList.remove('calibrating');
+                btn.classList.add('calibrated');
+                text.textContent = 'Start Tracking';
+                statusDiv.classList.add('calibrated');
+                statusText.textContent = 'Calibrated';
+            } else {
+                // Still calibrating or failed
+                setTimeout(checkTrackingStatus, 1000);
+            }
+        }).catch(error => {
+            console.error('Status check error:', error);
+        });
+    }
+}
+
+// Check tracking status on page load
+window.addEventListener('load', () => {
+    setTimeout(checkTrackingStatus, 1000);
+});
+
+// Pause tracking when navigating away from home
+function pauseTrackingOnNavigate() {
+    if (window.pywebview && window.pywebview.api) {
+        window.pywebview.api.pause_tracking();
+    }
+}
+
+// Resume tracking when returning home
+function resumeTrackingOnHome() {
+    if (window.pywebview && window.pywebview.api) {
+        window.pywebview.api.resume_tracking();
+    }
+}

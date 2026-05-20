@@ -1,0 +1,22 @@
+# Web UI
+pywebview>=4.0.0
+
+# Eye Tracking - Core
+opencv-python>=4.8.0
+numpy>=1.24.0
+scipy>=1.11.0
+mediapipe>=0.10.0
+
+# Eye Tracking - PTGaze (Optional - for better accuracy)
+# Uncomment these if you want to use PTGaze detector
+# torch>=2.0.0
+# torchvision>=0.15.0
+# omegaconf>=2.3.0
+# yacs>=0.1.8
+# face-alignment>=1.3.5
+
+# Mouse/Keyboard Control
+pyautogui>=0.9.54
+
+# System
+Pillow>=10.0.0

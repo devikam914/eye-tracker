@@ -257,6 +257,18 @@ function stopDwell(element) {
     }
 }
 
+// Voice feedback for keys
+function speakKey(char) {
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(char);
+        utterance.rate = 1.2;
+        utterance.pitch = 1;
+        utterance.volume = 0.8;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+    }
+}
+
 // Text composition functions
 function addCharacter(char) {
     const textArea = document.getElementById('text-area');
@@ -265,6 +277,9 @@ function addCharacter(char) {
     if (isShiftActive || isCapsLock) {
         char = char.toUpperCase();
     }
+    
+    // Speak the character
+    speakKey(char);
     
     // Insert at cursor or append
     if (document.activeElement === textArea) {
@@ -287,6 +302,9 @@ function addCharacter(char) {
 function addPhrase(text) {
     const textArea = document.getElementById('text-area');
     
+    // Speak the phrase
+    speakKey(text);
+    
     // Add space before if there's existing text
     if (textArea.textContent.trim().length > 0) {
         text = ' ' + text;
@@ -308,6 +326,9 @@ function addPrediction(word) {
     const text = textArea.textContent;
     const words = text.split(/\s+/);
     
+    // Speak the word
+    speakKey(word);
+    
     // Replace the last incomplete word with the prediction
     if (words.length > 0) {
         words[words.length - 1] = word;
@@ -322,11 +343,27 @@ function addPrediction(word) {
 }
 
 function addSpace() {
-    addCharacter(' ');
+    const textArea = document.getElementById('text-area');
+    
+    // Speak "space"
+    speakKey('space');
+    
+    if (document.activeElement === textArea) {
+        document.execCommand('insertText', false, ' ');
+    } else {
+        textArea.textContent += ' ';
+    }
+    
+    updateCharCount();
+    updatePredictions();
+    playFeedback();
 }
 
 function deleteChar() {
     const textArea = document.getElementById('text-area');
+    
+    // Speak "delete"
+    speakKey('delete');
     
     if (document.activeElement === textArea) {
         document.execCommand('delete');

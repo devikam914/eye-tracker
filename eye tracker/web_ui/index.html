@@ -103,6 +103,22 @@
                 </div>
             </div>
 
+            <!-- Calibration Button -->
+            <div class="calibration-section">
+                <button class="calibration-btn" id="calibration-btn" onclick="startCalibration()">
+                    <svg class="calibration-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="6"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                    </svg>
+                    <span id="calibration-text">Start Eye Tracking Calibration</span>
+                </button>
+                <div class="tracking-status" id="tracking-status">
+                    <span class="status-dot"></span>
+                    <span id="status-text">Not Calibrated</span>
+                </div>
+            </div>
+
             <!-- Instruction Bar -->
             <div class="instruction-bar">
                 <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
