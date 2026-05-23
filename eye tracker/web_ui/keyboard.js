@@ -15,7 +15,7 @@ const wordDictionary = {
     'a': ['am', 'are', 'and', 'about', 'all'],
     'b': ['be', 'but', 'by', 'been', 'back'],
     'c': ['can', 'call', 'come', 'could', 'care'],
-    'd': ['do', 'doctor', 'down', 'day', 'don\'t'],
+    'd': ['do', 'doctor', 'down', 'day', "don't"],
     'e': ['eat', 'every', 'even', 'end', 'enough'],
     'f': ['for', 'from', 'feel', 'family', 'find'],
     'g': ['go', 'get', 'good', 'give', 'going'],
@@ -47,6 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupKeys();
     setupPhrases();
     setupBottomControls();
+    setupActionButtons();
+    setupBackButton();
     setupThemeToggle();
     updateCharCount();
 });
@@ -58,9 +60,7 @@ function loadSettings() {
         const settings = JSON.parse(saved);
         dwellTime = settings.dwellTime || 1.2;
         isLightMode = settings.lightMode || false;
-        
         updateDwellDisplay();
-        
         if (isLightMode) {
             document.body.classList.add('light-mode');
             document.getElementById('theme-toggle').checked = true;
@@ -68,13 +68,11 @@ function loadSettings() {
     }
 }
 
-// Update dwell display
 function updateDwellDisplay() {
     document.getElementById('dwell-value').textContent = dwellTime.toFixed(1) + 's';
     document.documentElement.style.setProperty('--dwell-time', dwellTime + 's');
 }
 
-// Increase dwell time
 function increaseDwell() {
     dwellTime = Math.min(3.0, dwellTime + 0.1);
     updateDwellDisplay();
@@ -82,7 +80,6 @@ function increaseDwell() {
     playFeedback();
 }
 
-// Decrease dwell time
 function decreaseDwell() {
     dwellTime = Math.max(0.5, dwellTime - 0.1);
     updateDwellDisplay();
@@ -90,478 +87,359 @@ function decreaseDwell() {
     playFeedback();
 }
 
-// Save dwell time to settings
 function saveDwellTime() {
     const settings = JSON.parse(localStorage.getItem('gazeSettings') || '{}');
     settings.dwellTime = dwellTime;
     localStorage.setItem('gazeSettings', JSON.stringify(settings));
+    if (window.pywebview && window.pywebview.api) {
+        window.pywebview.api.update_dwell_time(dwellTime);
+    }
 }
 
-// Setup theme toggle
 function setupThemeToggle() {
     const toggle = document.getElementById('theme-toggle');
-    
     toggle.addEventListener('change', (e) => {
         isLightMode = e.target.checked;
         document.body.classList.toggle('light-mode', isLightMode);
-        
-        // Save to settings
         const settings = JSON.parse(localStorage.getItem('gazeSettings') || '{}');
         settings.lightMode = isLightMode;
         localStorage.setItem('gazeSettings', JSON.stringify(settings));
-        
         playFeedback();
     });
 }
 
-// Setup dwell slider
-function setupDwellSlider() {
-    const slider = document.getElementById('dwell-slider');
-    const valueDisplay = document.getElementById('dwell-value');
-    
-    slider.addEventListener('input', (e) => {
-        dwellTime = parseFloat(e.target.value);
-        valueDisplay.textContent = dwellTime.toFixed(1) + 's';
-        
-        // Save to settings
-        const settings = JSON.parse(localStorage.getItem('gazeSettings') || '{}');
-        settings.dwellTime = dwellTime;
-        localStorage.setItem('gazeSettings', JSON.stringify(settings));
-        
-        // Update CSS variable
-        document.documentElement.style.setProperty('--dwell-time', dwellTime + 's');
-    });
-    
-    // Set initial CSS variable
-    document.documentElement.style.setProperty('--dwell-time', dwellTime + 's');
-}
-
-// Setup keyboard tabs
 function setupKeyboardTabs() {
-    const tabs = document.querySelectorAll('.tab-btn');
-    
-    tabs.forEach(tab => {
-        tab.addEventListener('mouseenter', () => {
-            startDwell(tab);
-        });
-        
-        tab.addEventListener('mouseleave', () => {
-            stopDwell(tab);
-        });
-        
+    document.querySelectorAll('.tab-btn').forEach(tab => {
+        tab.addEventListener('mouseenter', () => startDwell(tab));
+        tab.addEventListener('mouseleave', () => stopDwell(tab));
         tab.addEventListener('click', () => {
+            if (_dwellLocked) return;
+            _dwellLocked = true;
+            stopDwell(tab);
             switchMode(tab.dataset.mode);
+            setTimeout(() => { _dwellLocked = false; }, 1200);
         });
     });
 }
 
-// Switch keyboard mode
 function switchMode(mode) {
     currentMode = mode;
-    
-    // Update tabs
     document.querySelectorAll('.tab-btn').forEach(tab => {
         tab.classList.toggle('active', tab.dataset.mode === mode);
     });
-    
-    // Update layouts
     document.querySelectorAll('.keyboard-layout').forEach(layout => {
         layout.classList.toggle('active', layout.id === mode + '-layout');
     });
-    
     playFeedback();
 }
 
-// Setup keys
 function setupKeys() {
-    const keys = document.querySelectorAll('.key');
-    
-    keys.forEach(key => {
-        key.addEventListener('mouseenter', () => {
-            startDwell(key);
-        });
-        
-        key.addEventListener('mouseleave', () => {
-            stopDwell(key);
-        });
-        
+    document.querySelectorAll('.key').forEach(key => {
+        key.addEventListener('mouseenter', () => startDwell(key));
+        key.addEventListener('mouseleave', () => stopDwell(key));
         key.addEventListener('click', () => {
-            const char = key.dataset.key;
-            addCharacter(char);
+            // Guard: if dwell lock is active, this click came from the JS dwell
+            // timer itself (via _activateElement) — don't double-fire.
+            // If lock is NOT active, this is a Python Win32 click or mouse click —
+            // fire the action and engage the cooldown to block the pending JS timer.
+            if (_dwellLocked) return;
+            _dwellLocked = true;
+            stopDwell(key);
+            addCharacter(key.dataset.key);
+            setTimeout(() => { _dwellLocked = false; }, 1200);
         });
     });
 }
 
-// Setup quick phrases
 function setupPhrases() {
-    const phrases = document.querySelectorAll('.phrase-card');
-    
-    phrases.forEach(phrase => {
-        phrase.addEventListener('mouseenter', () => {
-            startDwell(phrase);
-        });
-        
-        phrase.addEventListener('mouseleave', () => {
-            stopDwell(phrase);
-        });
-        
+    document.querySelectorAll('.phrase-card').forEach(phrase => {
+        phrase.addEventListener('mouseenter', () => startDwell(phrase));
+        phrase.addEventListener('mouseleave', () => stopDwell(phrase));
         phrase.addEventListener('click', () => {
-            const text = phrase.dataset.text;
-            addPhrase(text);
+            if (_dwellLocked) return;
+            _dwellLocked = true;
+            stopDwell(phrase);
+            addPhrase(phrase.dataset.text);
+            setTimeout(() => { _dwellLocked = false; }, 1200);
         });
     });
 }
 
-// Setup bottom controls
 function setupBottomControls() {
-    const controls = document.querySelectorAll('.control-btn');
-    
-    controls.forEach(control => {
-        control.addEventListener('mouseenter', () => {
-            startDwell(control);
-        });
-        
-        control.addEventListener('mouseleave', () => {
+    document.querySelectorAll('.control-btn').forEach(control => {
+        control.addEventListener('mouseenter', () => startDwell(control));
+        control.addEventListener('mouseleave', () => stopDwell(control));
+        control.addEventListener('click', () => {
+            if (_dwellLocked) return;
+            _dwellLocked = true;
             stopDwell(control);
+            _activateElement(control);
+            setTimeout(() => { _dwellLocked = false; }, 1200);
         });
     });
 }
 
-// Dwell tracking
+function setupActionButtons() {
+    document.querySelectorAll('.action-btn').forEach(btn => {
+        btn.addEventListener('mouseenter', () => startDwell(btn));
+        btn.addEventListener('mouseleave', () => stopDwell(btn));
+        btn.addEventListener('click', () => {
+            if (_dwellLocked) return;
+            _dwellLocked = true;
+            stopDwell(btn);
+            _activateElement(btn);
+            setTimeout(() => { _dwellLocked = false; }, 1200);
+        });
+    });
+}
+
+function setupBackButton() {
+    const back = document.querySelector('.back-btn-header');
+    if (back) {
+        back.addEventListener('mouseenter', () => startDwell(back));
+        back.addEventListener('mouseleave', () => stopDwell(back));
+        back.addEventListener('click', () => {
+            if (_dwellLocked) return;
+            _dwellLocked = true;
+            stopDwell(back);
+            goBack();
+            setTimeout(() => { _dwellLocked = false; }, 1200);
+        });
+    }
+}
+
+// ---- Dwell logic -----------------------------------------------------------
+// We call the action function directly instead of element.click() to avoid
+// any double-fire from click event bubbling or Python's DwellClicker.
+let _dwellLocked = false;  // prevents re-entry during cooldown
+
 function startDwell(element) {
     if (currentElement === element) return;
-    
     stopDwell(currentElement);
     currentElement = element;
-    
     element.classList.add('dwelling');
-    
     dwellTimer = setTimeout(() => {
-        element.click();
+        if (_dwellLocked) { stopDwell(element); return; }
+        _dwellLocked = true;
+        _activateElement(element);
         stopDwell(element);
+        // Cooldown matches Python's DWELL_COOLDOWN so both sides stay in sync
+        setTimeout(() => { _dwellLocked = false; }, 1200);
     }, dwellTime * 1000);
 }
 
 function stopDwell(element) {
     if (!element) return;
-    
     element.classList.remove('dwelling');
-    
-    if (dwellTimer) {
-        clearTimeout(dwellTimer);
-        dwellTimer = null;
-    }
-    
-    if (currentElement === element) {
-        currentElement = null;
-    }
+    if (dwellTimer) { clearTimeout(dwellTimer); dwellTimer = null; }
+    if (currentElement === element) currentElement = null;
 }
 
-// Voice feedback for keys
+// Dispatch the correct action for each element type without using .click()
+function _activateElement(el) {
+    if (el.classList.contains('key'))          { addCharacter(el.dataset.key); return; }
+    if (el.classList.contains('phrase-card'))  { addPhrase(el.dataset.text);   return; }
+    if (el.classList.contains('tab-btn'))      { switchMode(el.dataset.mode);  return; }
+    if (el.classList.contains('prediction-word')) { addPrediction(el.dataset.word); return; }
+    if (el.classList.contains('control-btn')) {
+        if (el.classList.contains('shift-btn'))  { toggleShift(); return; }
+        if (el.classList.contains('space-btn'))  { addSpace();    return; }
+        if (el.classList.contains('delete-btn')) { deleteChar();  return; }
+    }
+    if (el.classList.contains('action-btn')) {
+        if (el.classList.contains('speak-btn')) { speakText();  return; }
+        if (el.classList.contains('call-btn'))  { goToCalling(); return; }
+        if (el.classList.contains('clear-btn')) { clearText();  return; }
+        // copy btn
+        copyText(); return;
+    }
+    if (el.classList.contains('back-btn-header')) { goBack(); return; }
+    // fallback
+    el.click();
+}
+
+// ---- Text composition ------------------------------------------------------
 function speakKey(char) {
     if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(char);
-        utterance.rate = 1.2;
-        utterance.pitch = 1;
-        utterance.volume = 0.8;
+        utterance.rate = 1.2; utterance.pitch = 1; utterance.volume = 0.8;
         window.speechSynthesis.cancel();
         window.speechSynthesis.speak(utterance);
     }
 }
 
-// Text composition functions
 function addCharacter(char) {
     const textArea = document.getElementById('text-area');
-    
-    // Apply shift/caps
-    if (isShiftActive || isCapsLock) {
-        char = char.toUpperCase();
-    }
-    
-    // Speak the character
+    if (isShiftActive || isCapsLock) char = char.toUpperCase();
     speakKey(char);
-    
-    // Insert at cursor or append
     if (document.activeElement === textArea) {
         document.execCommand('insertText', false, char);
     } else {
         textArea.textContent += char;
     }
-    
-    // Reset shift (but not caps lock)
-    if (isShiftActive && !isCapsLock) {
-        isShiftActive = false;
-        updateShiftButton();
-    }
-    
-    updateCharCount();
-    updatePredictions();
-    playFeedback();
+    if (isShiftActive && !isCapsLock) { isShiftActive = false; updateShiftButton(); }
+    updateCharCount(); updatePredictions(); playFeedback();
 }
 
 function addPhrase(text) {
     const textArea = document.getElementById('text-area');
-    
-    // Speak the phrase
     speakKey(text);
-    
-    // Add space before if there's existing text
-    if (textArea.textContent.trim().length > 0) {
-        text = ' ' + text;
+
+    // Special case: "Help" triggers an alarm sound 4 times
+    if (text.trim().toLowerCase() === 'help') {
+        _playHelpAlarm();
     }
-    
+
+    if (textArea.textContent.trim().length > 0) text = ' ' + text;
     if (document.activeElement === textArea) {
         document.execCommand('insertText', false, text);
     } else {
         textArea.textContent += text;
     }
-    
-    updateCharCount();
-    updatePredictions();
-    playFeedback();
+    updateCharCount(); updatePredictions(); playFeedback();
+}
+
+// Play a loud alarm beep 4 times using Web Audio API
+function _playHelpAlarm() {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    let count = 0;
+    function beep() {
+        if (count >= 4) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'square';
+        osc.frequency.value = 880;  // high-pitched alarm
+        gain.gain.value = 1.0;
+        osc.start();
+        osc.stop(ctx.currentTime + 0.6);
+        osc.onended = () => {
+            count++;
+            setTimeout(beep, 300);  // 300ms gap between beeps
+        };
+    }
+    beep();
 }
 
 function addPrediction(word) {
     const textArea = document.getElementById('text-area');
-    const text = textArea.textContent;
-    const words = text.split(/\s+/);
-    
-    // Speak the word
+    const words = textArea.textContent.split(/\s+/);
     speakKey(word);
-    
-    // Replace the last incomplete word with the prediction
-    if (words.length > 0) {
-        words[words.length - 1] = word;
-        textArea.textContent = words.join(' ') + ' ';
-    } else {
-        textArea.textContent = word + ' ';
-    }
-    
-    updateCharCount();
-    updatePredictions();
-    playFeedback();
+    if (words.length > 0) { words[words.length - 1] = word; textArea.textContent = words.join(' ') + ' '; }
+    else { textArea.textContent = word + ' '; }
+    updateCharCount(); updatePredictions(); playFeedback();
 }
 
 function addSpace() {
     const textArea = document.getElementById('text-area');
-    
-    // Speak "space"
     speakKey('space');
-    
-    if (document.activeElement === textArea) {
-        document.execCommand('insertText', false, ' ');
-    } else {
-        textArea.textContent += ' ';
-    }
-    
-    updateCharCount();
-    updatePredictions();
-    playFeedback();
+    if (document.activeElement === textArea) { document.execCommand('insertText', false, ' '); }
+    else { textArea.textContent += ' '; }
+    updateCharCount(); updatePredictions(); playFeedback();
 }
 
 function deleteChar() {
     const textArea = document.getElementById('text-area');
-    
-    // Speak "delete"
     speakKey('delete');
-    
-    if (document.activeElement === textArea) {
-        document.execCommand('delete');
-    } else {
-        textArea.textContent = textArea.textContent.slice(0, -1);
-    }
-    
-    updateCharCount();
-    updatePredictions();
-    playFeedback();
+    if (document.activeElement === textArea) { document.execCommand('delete'); }
+    else { textArea.textContent = textArea.textContent.slice(0, -1); }
+    updateCharCount(); updatePredictions(); playFeedback();
 }
 
 function toggleShift() {
-    if (isCapsLock) {
-        // Turn off caps lock
-        isCapsLock = false;
-        isShiftActive = false;
-    } else if (isShiftActive) {
-        // Turn on caps lock
-        isCapsLock = true;
-    } else {
-        // Turn on shift
-        isShiftActive = true;
-    }
-    
-    updateShiftButton();
-    playFeedback();
+    if (isCapsLock) { isCapsLock = false; isShiftActive = false; }
+    else if (isShiftActive) { isCapsLock = true; }
+    else { isShiftActive = true; }
+    updateShiftButton(); playFeedback();
 }
 
 function updateShiftButton() {
     const shiftBtn = document.querySelector('.shift-btn');
-    
-    if (isCapsLock || isShiftActive) {
-        shiftBtn.classList.add('active');
-    } else {
-        shiftBtn.classList.remove('active');
-    }
+    shiftBtn.classList.toggle('active', isCapsLock || isShiftActive);
 }
 
 function updateCharCount() {
     const textArea = document.getElementById('text-area');
-    const charCount = document.getElementById('char-count');
     const count = textArea.textContent.length;
-    charCount.textContent = count + ' char' + (count !== 1 ? 's' : '');
+    document.getElementById('char-count').textContent = count + ' char' + (count !== 1 ? 's' : '');
 }
 
-// Word prediction
 function updatePredictions() {
     const textArea = document.getElementById('text-area');
-    const text = textArea.textContent;
-    const words = text.split(/\s+/);
+    const words = textArea.textContent.split(/\s+/);
     const lastWord = words[words.length - 1].toLowerCase();
-    
-    const predictionsContainer = document.getElementById('word-predictions');
-    predictionsContainer.innerHTML = '';
-    
-    if (lastWord.length === 0) {
-        return;
-    }
-    
-    // Get predictions based on first letter
-    const firstLetter = lastWord[0];
-    let predictions = wordDictionary[firstLetter] || [];
-    
-    // Filter predictions that start with the current word
-    predictions = predictions.filter(word => 
-        word.toLowerCase().startsWith(lastWord) && word.toLowerCase() !== lastWord
-    ).slice(0, 5);
-    
-    // Create prediction buttons
+    const container = document.getElementById('word-predictions');
+    container.innerHTML = '';
+    if (!lastWord.length) return;
+    let predictions = (wordDictionary[lastWord[0]] || [])
+        .filter(w => w.toLowerCase().startsWith(lastWord) && w.toLowerCase() !== lastWord)
+        .slice(0, 5);
     predictions.forEach(word => {
         const btn = document.createElement('button');
         btn.className = 'prediction-word';
         btn.textContent = word;
         btn.dataset.word = word;
-        
-        btn.addEventListener('mouseenter', () => {
-            startDwell(btn);
-        });
-        
-        btn.addEventListener('mouseleave', () => {
-            stopDwell(btn);
-        });
-        
-        btn.addEventListener('click', () => {
-            addPrediction(word);
-        });
-        
-        predictionsContainer.appendChild(btn);
+        btn.addEventListener('mouseenter', () => startDwell(btn));
+        btn.addEventListener('mouseleave', () => stopDwell(btn));
+        btn.addEventListener('click',      () => addPrediction(word));
+        container.appendChild(btn);
     });
 }
 
-// Text actions
+// ---- Text actions ----------------------------------------------------------
 function copyText() {
-    const textArea = document.getElementById('text-area');
-    const text = textArea.textContent;
-    
-    if (text.length === 0) return;
-    
-    // Copy to clipboard
-    navigator.clipboard.writeText(text).then(() => {
-        showNotification('Text copied to clipboard!');
-    }).catch(err => {
-        console.error('Failed to copy:', err);
-    });
-    
+    const text = document.getElementById('text-area').textContent;
+    if (!text.length) return;
+    navigator.clipboard.writeText(text).then(() => showNotification('Text copied to clipboard!')).catch(console.error);
     playFeedback();
 }
 
 function speakText() {
-    const textArea = document.getElementById('text-area');
-    const text = textArea.textContent;
-    
-    if (text.length === 0) return;
-    
-    // Use Web Speech API
+    const text = document.getElementById('text-area').textContent;
+    if (!text.length) return;
     if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.9;
-        utterance.pitch = 1;
-        utterance.volume = 1;
-        
-        window.speechSynthesis.cancel(); // Cancel any ongoing speech
-        window.speechSynthesis.speak(utterance);
-        
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 0.9; u.pitch = 1; u.volume = 1;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(u);
         showNotification('Speaking...');
-    } else {
-        showNotification('Text-to-speech not supported');
-    }
-    
+    } else { showNotification('Text-to-speech not supported'); }
     playFeedback();
 }
 
 function clearText() {
-    const textArea = document.getElementById('text-area');
-    textArea.textContent = '';
-    updateCharCount();
-    playFeedback();
+    document.getElementById('text-area').textContent = '';
+    updateCharCount(); playFeedback();
 }
 
-// Notification
 function showNotification(message) {
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(79, 172, 254, 0.95);
-        color: white;
-        padding: 20px 40px;
-        border-radius: 15px;
-        font-size: 18px;
-        font-weight: 600;
-        z-index: 10000;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    `;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.opacity = '0';
-        notification.style.transition = 'opacity 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
-    }, 2000);
+    const n = document.createElement('div');
+    n.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(79,172,254,0.95);color:white;padding:20px 40px;border-radius:15px;font-size:18px;font-weight:600;z-index:10000;box-shadow:0 10px 40px rgba(0,0,0,0.3)';
+    n.textContent = message;
+    document.body.appendChild(n);
+    setTimeout(() => { n.style.opacity = '0'; n.style.transition = 'opacity 0.3s ease'; setTimeout(() => n.remove(), 300); }, 2000);
 }
 
-// Go back to home
 function goBack() {
     playFeedback();
-    if (window.pywebview) {
-        window.pywebview.api.go_back_home();
-    } else {
-        window.location.href = 'index.html';
-    }
+    if (window.pywebview) { window.pywebview.api.go_back_home(); }
+    else { window.location.href = 'index.html'; }
 }
 
-// Go to calling page
 function goToCalling() {
     playFeedback();
-    if (window.pywebview) {
-        window.pywebview.api.handle_action('calling');
-    } else {
-        window.location.href = 'calling.html';
-    }
+    if (window.pywebview) { window.pywebview.api.handle_action('calling'); }
+    else { window.location.href = 'calling.html'; }
 }
 
-// Feedback
 function playFeedback() {
     document.body.style.transform = 'scale(0.998)';
-    setTimeout(() => {
-        document.body.style.transform = 'scale(1)';
-    }, 50);
+    setTimeout(() => { document.body.style.transform = 'scale(1)'; }, 50);
 }
 
 // Gaze tracking integration
 function updateGazePosition(x, y) {
-    // Check all interactive elements
     const elements = [
         ...document.querySelectorAll('.key'),
         ...document.querySelectorAll('.phrase-card'),
@@ -571,64 +449,32 @@ function updateGazePosition(x, y) {
         ...document.querySelectorAll('.prediction-word'),
         ...document.querySelectorAll('.back-btn-header')
     ];
-    
-    let foundElement = null;
-    
-    for (const element of elements) {
-        const rect = element.getBoundingClientRect();
-        
-        if (x >= rect.left && x <= rect.right &&
-            y >= rect.top && y <= rect.bottom) {
-            foundElement = element;
-            break;
-        }
+    let found = null;
+    for (const el of elements) {
+        const r = el.getBoundingClientRect();
+        if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) { found = el; break; }
     }
-    
-    if (foundElement) {
-        startDwell(foundElement);
-    } else if (currentElement) {
-        stopDwell(currentElement);
-    }
+    if (found) { startDwell(found); }
+    else if (currentElement) { stopDwell(currentElement); }
 }
-
-// Expose for Python
 window.updateGaze = updateGazePosition;
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        goBack();
-    } else if (e.key === 'Backspace' && document.activeElement !== document.getElementById('text-area')) {
-        e.preventDefault();
-        deleteChar();
-    } else if (e.ctrlKey && e.key === 'c' && document.activeElement !== document.getElementById('text-area')) {
-        e.preventDefault();
-        copyText();
-    } else if (e.ctrlKey && e.key === 's') {
-        e.preventDefault();
-        speakText();
-    }
+    if (e.key === 'Escape') { goBack(); }
+    else if (e.key === 'Backspace' && document.activeElement !== document.getElementById('text-area')) { e.preventDefault(); deleteChar(); }
+    else if (e.ctrlKey && e.key === 'c' && document.activeElement !== document.getElementById('text-area')) { e.preventDefault(); copyText(); }
+    else if (e.ctrlKey && e.key === 's') { e.preventDefault(); speakText(); }
 });
 
-// Prevent context menu
-document.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-});
+document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-// Auto-save text
 setInterval(() => {
-    const textArea = document.getElementById('text-area');
-    if (textArea.textContent.length > 0) {
-        localStorage.setItem('gazeKeyboardText', textArea.textContent);
-    }
+    const t = document.getElementById('text-area');
+    if (t.textContent.length > 0) localStorage.setItem('gazeKeyboardText', t.textContent);
 }, 5000);
 
-// Restore saved text
 window.addEventListener('load', () => {
-    const savedText = localStorage.getItem('gazeKeyboardText');
-    if (savedText) {
-        const textArea = document.getElementById('text-area');
-        textArea.textContent = savedText;
-        updateCharCount();
-    }
+    const saved = localStorage.getItem('gazeKeyboardText');
+    if (saved) { document.getElementById('text-area').textContent = saved; updateCharCount(); }
 });

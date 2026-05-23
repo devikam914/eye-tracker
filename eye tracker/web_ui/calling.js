@@ -1,31 +1,30 @@
 // Phone numbers configuration
-const EMERGENCY_NUMBER = '911';
-let FAMILY_NUMBER = null; // Will be loaded from settings
-let FAMILY_NAME = 'Family'; // Default name
+const EMERGENCY_NUMBER = '112';
+let FAMILY_NUMBER = null;
+let FAMILY_NAME = 'Family';
 
 // Dwell tracking
 let dwellTimer = null;
 let currentCard = null;
-let dwellTime = 1.5; // seconds
+let _dwellLocked = false;
+let dwellTime = 1.5;
 let isDarkMode = false;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
-    loadFamilyContact();
     setupDwellTracking();
-    updateFamilyNumber();
     setupThemeToggle();
+    loadFamilyContact(); // async — calls updateFamilyDisplay when done
 });
 
-// Load settings
+// ---- Settings --------------------------------------------------------------
 function loadSettings() {
     const saved = localStorage.getItem('gazeSettings');
     if (saved) {
         const settings = JSON.parse(saved);
-        dwellTime = settings.dwellTime || 1.5;
-        isDarkMode = settings.darkMode || false;
-        
+        dwellTime  = settings.dwellTime || 1.5;
+        isDarkMode = settings.darkMode  || false;
         if (isDarkMode) {
             document.body.classList.add('dark-mode');
             document.getElementById('theme-toggle').checked = false;
@@ -34,246 +33,191 @@ function loadSettings() {
             document.getElementById('theme-toggle').checked = true;
         }
     }
+    document.documentElement.style.setProperty('--dwell-time', dwellTime + 's');
 }
 
-// Setup theme toggle
 function setupThemeToggle() {
     const toggle = document.getElementById('theme-toggle');
-    
     toggle.addEventListener('change', (e) => {
         isDarkMode = !e.target.checked;
         document.body.classList.toggle('dark-mode', isDarkMode);
-        
-        // Save to settings
         const settings = JSON.parse(localStorage.getItem('gazeSettings') || '{}');
         settings.darkMode = isDarkMode;
         localStorage.setItem('gazeSettings', JSON.stringify(settings));
-        
         playFeedback();
     });
 }
 
-// Load family contact from settings
+// ---- Family contact — loaded from Python (disk file, persists across runs) -
 function loadFamilyContact() {
-    const saved = localStorage.getItem('familyContact');
-    if (saved) {
-        const contact = JSON.parse(saved);
-        FAMILY_NUMBER = contact.phone || null;
-        FAMILY_NAME = contact.name || 'Family';
-    }
+    _waitForPywebview(5000, () => {
+        window.pywebview.api.get_family_contact().then(contact => {
+            if (contact && contact.phone) {
+                FAMILY_NUMBER = contact.phone;
+                FAMILY_NAME   = contact.name || 'Family';
+            }
+            updateFamilyDisplay();
+        }).catch(() => updateFamilyDisplay());
+    }, () => {
+        // pywebview not available — browser testing fallback
+        const saved = localStorage.getItem('familyContact');
+        if (saved) {
+            const c = JSON.parse(saved);
+            FAMILY_NUMBER = c.phone || null;
+            FAMILY_NAME   = c.name  || 'Family';
+        }
+        updateFamilyDisplay();
+    });
 }
 
-// Update family number display
-function updateFamilyNumber() {
-    const familyCard = document.querySelector('.family-card');
-    const numberElement = document.getElementById('family-number');
-    const titleElement = familyCard.querySelector('.call-title');
-    
-    // Update title with family name
-    titleElement.textContent = `👨‍👩‍👧‍👦 Call ${FAMILY_NAME}`;
-    
-    // Update number display
+// Wait up to maxMs for window.pywebview.api to be ready, then call onReady.
+// Calls onFail if it never becomes available.
+function _waitForPywebview(maxMs, onReady, onFail) {
+    const start = Date.now();
+    function check() {
+        if (window.pywebview && window.pywebview.api) {
+            onReady();
+        } else if (Date.now() - start < maxMs) {
+            setTimeout(check, 100);
+        } else {
+            onFail();
+        }
+    }
+    check();
+}
+
+function updateFamilyDisplay() {
+    const card    = document.querySelector('.family-card');
+    const numEl   = document.getElementById('family-number');
+    const titleEl = card.querySelector('.call-title');
+    titleEl.textContent = `\u{1F46A} Call ${FAMILY_NAME}`;
     if (FAMILY_NUMBER) {
-        numberElement.textContent = formatPhoneNumber(FAMILY_NUMBER);
-        familyCard.style.opacity = '1';
-        familyCard.style.pointerEvents = 'auto';
+        numEl.textContent = FAMILY_NUMBER;
+        numEl.style.color = '';
     } else {
-        numberElement.textContent = 'Not configured';
-        numberElement.style.color = '#ff6b6b';
-        // Optionally disable the card
-        familyCard.style.opacity = '0.6';
-        familyCard.style.cursor = 'not-allowed';
+        numEl.textContent = 'Set number in Settings first';
+        numEl.style.color = '#ffb347';
     }
 }
 
-// Format phone number for display
-function formatPhoneNumber(number) {
-    // Simple formatting for display
-    if (number.startsWith('+91')) {
-        return number.replace('+91', '+91 ') + ' (Family)';
-    }
-    return number;
-}
-
-// Setup dwell tracking
+// ---- Dwell logic -----------------------------------------------------------
 function setupDwellTracking() {
-    const cards = document.querySelectorAll('.call-card');
-    
-    cards.forEach(card => {
-        card.addEventListener('mouseenter', () => {
-            startDwell(card);
-        });
-        
-        card.addEventListener('mouseleave', () => {
-            stopDwell(card);
-        });
-        
-        card.addEventListener('click', () => {
-            const action = card.dataset.action;
-            initiateCall(action);
+    document.querySelectorAll('.call-card, .back-btn').forEach(el => {
+        el.addEventListener('mouseenter', () => startDwell(el));
+        el.addEventListener('mouseleave', () => stopDwell(el));
+        el.addEventListener('click', () => {
+            if (_dwellLocked) return;
+            _dwellLocked = true;
+            stopDwell(el);
+            if (el.classList.contains('call-card'))  initiateCall(el.dataset.action);
+            else if (el.classList.contains('back-btn')) goBack();
+            setTimeout(() => { _dwellLocked = false; }, 1200);
         });
     });
 }
 
-function startDwell(card) {
-    if (currentCard === card) return;
-    
+function startDwell(el) {
+    if (currentCard === el) return;
     stopDwell(currentCard);
-    currentCard = card;
-    
-    card.classList.add('dwelling');
-    
+    currentCard = el;
+    el.classList.add('dwelling');
     dwellTimer = setTimeout(() => {
-        const action = card.dataset.action;
-        initiateCall(action);
+        if (_dwellLocked) { stopDwell(el); return; }
+        _dwellLocked = true;
+        if (el.classList.contains('call-card'))     initiateCall(el.dataset.action);
+        else if (el.classList.contains('back-btn')) goBack();
+        stopDwell(el);
+        setTimeout(() => { _dwellLocked = false; }, 1200);
     }, dwellTime * 1000);
 }
 
-function stopDwell(card) {
-    if (!card) return;
-    
-    card.classList.remove('dwelling');
-    
-    if (dwellTimer) {
-        clearTimeout(dwellTimer);
-        dwellTimer = null;
-    }
-    
-    if (currentCard === card) {
-        currentCard = null;
-    }
+function stopDwell(el) {
+    if (!el) return;
+    el.classList.remove('dwelling');
+    if (dwellTimer) { clearTimeout(dwellTimer); dwellTimer = null; }
+    if (currentCard === el) currentCard = null;
 }
 
-// Initiate call
+// ---- Call logic ------------------------------------------------------------
 function initiateCall(type) {
-    stopDwell(currentCard);
-    
     let number, title;
-    
     if (type === 'emergency') {
         number = EMERGENCY_NUMBER;
-        title = '🚨 Calling Emergency...';
+        title  = '\uD83D\uDEA8 Calling Emergency...';
     } else if (type === 'family') {
         if (!FAMILY_NUMBER) {
-            alert('Please configure family contact in Settings first');
+            // Number not loaded yet or not set — show message, don't redirect
+            showNotification('Loading contact... please try again in a moment');
+            // Try loading again
+            loadFamilyContact();
             return;
         }
         number = FAMILY_NUMBER;
-        title = `👨‍👩‍👧‍👦 Calling ${FAMILY_NAME}...`;
+        title  = `\u{1F46A} Calling ${FAMILY_NAME}...`;
     }
-    
-    // Show modal
     showCallModal(title, number);
-    
-    // Make the call
     makeCall(number);
-    
-    // Visual feedback
     playFeedback();
 }
 
-// Show call modal
 function showCallModal(title, number) {
-    const modal = document.getElementById('call-modal');
-    document.getElementById('modal-title').textContent = title;
-    document.getElementById('modal-number').textContent = formatPhoneNumber(number);
-    modal.classList.remove('hidden');
+    document.getElementById('modal-title').textContent  = title;
+    document.getElementById('modal-number').textContent = number;
+    document.getElementById('call-modal').classList.remove('hidden');
 }
 
-// Hide call modal
 function hideCallModal() {
-    const modal = document.getElementById('call-modal');
-    modal.classList.add('hidden');
+    document.getElementById('call-modal').classList.add('hidden');
 }
 
-// Make the actual call
 function makeCall(number) {
-    console.log(`Initiating call to: ${number}`);
-    
-    // Send to Python backend (Python handles the Enter key presses automatically)
-    if (window.pywebview) {
-        window.pywebview.api.make_call(number);
-    } else {
-        // Fallback for testing in browser
-        console.log(`Would call: ${number}`);
-        
-        // Try to use tel: protocol
-        try {
-            window.location.href = `tel:${number}`;
-        } catch (e) {
-            console.error('Cannot initiate call:', e);
-        }
-    }
-    
-    // Auto-hide modal after 5 seconds (to allow time for call initiation)
-    setTimeout(() => {
-        hideCallModal();
-    }, 5000);
+    console.log('Calling:', number);
+    if (window.pywebview) window.pywebview.api.make_call(number);
+    setTimeout(hideCallModal, 6000);
 }
 
-// Cancel call
 function cancelCall() {
     hideCallModal();
     playFeedback();
-    
-    if (window.pywebview) {
-        window.pywebview.api.cancel_call();
-    }
+    if (window.pywebview) window.pywebview.api.cancel_call();
 }
 
-// Go back to home
 function goBack() {
     playFeedback();
-    if (window.pywebview) {
-        window.pywebview.api.go_back_home();
-    } else {
-        window.location.href = 'index.html';
-    }
+    if (window.pywebview) window.pywebview.api.go_back_home();
+    else window.location.href = 'index.html';
 }
 
-// Feedback
 function playFeedback() {
     document.body.style.transform = 'scale(0.99)';
-    setTimeout(() => {
-        document.body.style.transform = 'scale(1)';
-    }, 100);
+    setTimeout(() => { document.body.style.transform = 'scale(1)'; }, 100);
 }
 
-// Gaze tracking integration
-function updateGazePosition(x, y) {
-    const cards = document.querySelectorAll('.call-card');
-    
-    cards.forEach(card => {
-        const rect = card.getBoundingClientRect();
-        
-        if (x >= rect.left && x <= rect.right &&
-            y >= rect.top && y <= rect.bottom) {
-            startDwell(card);
-        } else if (currentCard === card) {
-            stopDwell(card);
-        }
-    });
+function showNotification(msg) {
+    const n = document.createElement('div');
+    n.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(79,172,254,0.95);color:white;padding:20px 40px;border-radius:15px;font-size:18px;font-weight:600;z-index:10000;box-shadow:0 10px 40px rgba(0,0,0,0.3)';
+    n.textContent = msg;
+    document.body.appendChild(n);
+    setTimeout(() => { n.style.opacity='0'; n.style.transition='opacity 0.3s'; setTimeout(()=>n.remove(),300); }, 2500);
 }
 
-// Expose for Python
-window.updateGaze = updateGazePosition;
+// ---- Gaze integration ------------------------------------------------------
+window.updateGaze = function(x, y) {
+    const els = document.querySelectorAll('.call-card, .back-btn');
+    let found = null;
+    for (const el of els) {
+        const r = el.getBoundingClientRect();
+        if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) { found = el; break; }
+    }
+    if (found) startDwell(found);
+    else if (currentCard) stopDwell(currentCard);
+};
 
-// Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-        if (!document.getElementById('call-modal').classList.contains('hidden')) {
-            cancelCall();
-        } else {
-            goBack();
-        }
-    } else if (e.key === '1') {
-        initiateCall('emergency');
-    } else if (e.key === '2') {
-        initiateCall('family');
+        if (!document.getElementById('call-modal').classList.contains('hidden')) cancelCall();
+        else goBack();
     }
 });
 
-// Prevent context menu
-document.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-});
+document.addEventListener('contextmenu', (e) => e.preventDefault());

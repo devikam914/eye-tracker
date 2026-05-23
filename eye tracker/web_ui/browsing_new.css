@@ -131,6 +131,8 @@ body.dark-mode .dwell-display {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 body.dark-mode .back-btn {
@@ -314,6 +316,8 @@ body.dark-mode .search-input::placeholder {
     gap: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 body.dark-mode .search-btn {
@@ -345,6 +349,8 @@ body.dark-mode .search-btn {
     gap: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 body.dark-mode .speak-btn {
@@ -380,6 +386,8 @@ body.dark-mode .speak-btn {
     gap: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 body.dark-mode .call-btn {
@@ -624,19 +632,70 @@ body.dark-mode .key.special-key:hover {
     box-shadow: 0 8px 25px rgba(220, 53, 69, 0.5);
 }
 
-/* Dwell Effect */
+/* Space key — wide like virtual keyboard */
+.key.space-key {
+    flex: 4 !important;
+    max-width: none;
+}
+
+/* Dwell Effect — top fill bar, same as keyboard.css */
+.key::after,
+.search-btn::after,
+.speak-btn::after,
+.call-btn::after,
+.quick-link::after,
+.back-btn::after,
+.dwell-btn::after,
+.tab-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 4px;
+    background: linear-gradient(90deg, #8b6f47 0%, #a67c52 100%);
+    border-radius: 15px 15px 0 0;
+    z-index: 2;
+    pointer-events: none;
+}
+
+body.dark-mode .key::after,
+body.dark-mode .search-btn::after,
+body.dark-mode .speak-btn::after,
+body.dark-mode .call-btn::after,
+body.dark-mode .quick-link::after,
+body.dark-mode .back-btn::after,
+body.dark-mode .dwell-btn::after,
+body.dark-mode .tab-btn::after {
+    background: linear-gradient(90deg, #2dd4bf 0%, #14b8a6 100%);
+}
+
+.key.dwelling::after,
+.search-btn.dwelling::after,
+.speak-btn.dwelling::after,
+.call-btn.dwelling::after,
+.quick-link.dwelling::after,
+.back-btn.dwelling::after,
+.dwell-btn.dwelling::after,
+.tab-btn.dwelling::after {
+    animation: dwellBar var(--dwell-time, 1.5s) linear forwards;
+}
+
+@keyframes dwellBar {
+    from { width: 0%; }
+    to   { width: 100%; }
+}
+
 .key.dwelling,
 .search-btn.dwelling,
 .speak-btn.dwelling,
 .call-btn.dwelling,
 .quick-link.dwelling,
 .back-btn.dwelling,
-.theme-toggle.dwelling,
 .dwell-btn.dwelling,
 .tab-btn.dwelling {
-    outline: 4px solid #8b6f47;
-    outline-offset: 4px;
-    animation: dwellPulse 1.5s ease-in-out;
+    border-color: #8b6f47 !important;
+    box-shadow: 0 0 20px rgba(139, 111, 71, 0.5);
 }
 
 body.dark-mode .key.dwelling,
@@ -645,19 +704,17 @@ body.dark-mode .speak-btn.dwelling,
 body.dark-mode .call-btn.dwelling,
 body.dark-mode .quick-link.dwelling,
 body.dark-mode .back-btn.dwelling,
-body.dark-mode .theme-toggle.dwelling,
 body.dark-mode .dwell-btn.dwelling,
 body.dark-mode .tab-btn.dwelling {
-    outline-color: #2dd4bf;
+    border-color: #2dd4bf !important;
+    box-shadow: 0 0 20px rgba(45, 212, 191, 0.5);
 }
 
-@keyframes dwellPulse {
-    0%, 100% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.02);
-    }
+/* Ensure text stays above bar */
+.key > *, .search-btn > *, .speak-btn > *, .call-btn > *,
+.quick-link > *, .back-btn > *, .dwell-btn > *, .tab-btn > * {
+    position: relative;
+    z-index: 1;
 }
 
 /* Key press animation */

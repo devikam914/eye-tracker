@@ -275,10 +275,7 @@ body.dark-mode .tile {
 .tile::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     background: linear-gradient(135deg, rgba(139, 111, 71, 0.1) 0%, rgba(139, 111, 71, 0) 100%);
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -365,13 +362,10 @@ body.dark-mode .tile-subtitle {
     color: #999;
 }
 
-/* Dwell Progress */
+/* Dwell Progress — CSS animation, duration matches dwell time via --dwell-time */
 .dwell-progress {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     border-radius: 24px;
     border: 4px solid #8b6f47;
     opacity: 0;
@@ -385,37 +379,19 @@ body.dark-mode .dwell-progress {
 
 .tile.dwelling .dwell-progress {
     opacity: 1;
-    animation: dwellProgress 1.5s linear forwards;
+    animation: dwellProgress var(--dwell-time, 2.0s) linear forwards;
 }
 
 @keyframes dwellProgress {
-    from {
-        clip-path: polygon(50% 50%, 50% 0%, 50% 0%, 50% 0%, 50% 0%, 50% 0%, 50% 0%);
-    }
-    12.5% {
-        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 0%, 100% 0%, 100% 0%, 50% 0%);
-    }
-    25% {
-        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 50%, 100% 50%, 50% 0%);
-    }
-    37.5% {
-        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 100% 100%, 50% 0%);
-    }
-    50% {
-        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 50% 100%, 50% 0%);
-    }
-    62.5% {
-        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 50% 100%, 0% 100%);
-    }
-    75% {
-        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 50% 100%, 0% 100%, 0% 50%);
-    }
-    87.5% {
-        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 50% 100%, 0% 100%, 0% 50%, 0% 0%);
-    }
-    to {
-        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 50% 100%, 0% 100%, 0% 50%, 0% 0%, 50% 0%);
-    }
+    from   { clip-path: polygon(50% 50%, 50% 0%, 50% 0%, 50% 0%, 50% 0%, 50% 0%, 50% 0%); }
+    12.5%  { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 0%, 100% 0%, 100% 0%, 50% 0%); }
+    25%    { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 50%, 100% 50%, 50% 0%); }
+    37.5%  { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 100% 100%, 50% 0%); }
+    50%    { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 50% 100%, 50% 0%); }
+    62.5%  { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 50% 100%, 0% 100%); }
+    75%    { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 50% 100%, 0% 100%, 0% 50%); }
+    87.5%  { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 50% 100%, 0% 100%, 0% 50%, 0% 0%); }
+    to     { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 50% 100%, 0% 100%, 0% 50%, 0% 0%, 50% 0%); }
 }
 
 /* Instruction Bar */
@@ -490,9 +466,7 @@ body.dark-mode .widget-icon {
     color: #2dd4bf;
 }
 
-.widget-content {
-    flex: 1;
-}
+.widget-content { flex: 1; }
 
 .widget-title {
     font-size: 22px;
@@ -501,9 +475,7 @@ body.dark-mode .widget-icon {
     margin-bottom: 2px;
 }
 
-body.dark-mode .widget-title {
-    color: #ffffff;
-}
+body.dark-mode .widget-title { color: #ffffff; }
 
 .widget-subtitle {
     font-size: 12px;
@@ -511,9 +483,7 @@ body.dark-mode .widget-title {
     font-weight: 500;
 }
 
-body.dark-mode .widget-subtitle {
-    color: #999;
-}
+body.dark-mode .widget-subtitle { color: #999; }
 
 /* Battery Icon */
 .battery-icon {
@@ -525,9 +495,7 @@ body.dark-mode .widget-subtitle {
     flex-shrink: 0;
 }
 
-body.dark-mode .battery-icon {
-    border-color: #2dd4bf;
-}
+body.dark-mode .battery-icon { border-color: #2dd4bf; }
 
 .battery-icon::after {
     content: '';
@@ -541,51 +509,30 @@ body.dark-mode .battery-icon {
     border-radius: 0 2px 2px 0;
 }
 
-body.dark-mode .battery-icon::after {
-    background: #2dd4bf;
-}
+body.dark-mode .battery-icon::after { background: #2dd4bf; }
 
 .battery-level {
     position: absolute;
-    left: 2px;
-    top: 2px;
-    bottom: 2px;
+    left: 2px; top: 2px; bottom: 2px;
     width: 85%;
     background: #8b6f47;
     border-radius: 1px;
     transition: width 0.3s ease;
 }
 
-body.dark-mode .battery-level {
-    background: #2dd4bf;
-}
+body.dark-mode .battery-level { background: #2dd4bf; }
 
-/* Responsive Design */
+/* Responsive */
 @media (max-width: 1024px) {
-    .tiles-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+    .tiles-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 768px) {
-    .container {
-        padding: 20px;
-    }
-    
-    .header {
-        flex-direction: column;
-        gap: 15px;
-    }
-    
-    .tiles-grid {
-        gap: 15px;
-    }
-    
-    .info-bar {
-        grid-template-columns: 1fr;
-    }
+    .container { padding: 20px; }
+    .header { flex-direction: column; gap: 15px; }
+    .tiles-grid { gap: 15px; }
+    .info-bar { grid-template-columns: 1fr; }
 }
-
 
 /* Calibration Section */
 .calibration-section {
@@ -627,9 +574,7 @@ body.dark-mode .calibration-btn:hover {
     box-shadow: 0 12px 35px rgba(45, 212, 191, 0.4);
 }
 
-.calibration-btn:active {
-    transform: translateY(-1px);
-}
+.calibration-btn:active { transform: translateY(-1px); }
 
 .calibration-icon {
     width: 28px;
@@ -638,14 +583,8 @@ body.dark-mode .calibration-btn:hover {
 }
 
 @keyframes pulse {
-    0%, 100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-    50% {
-        transform: scale(1.1);
-        opacity: 0.8;
-    }
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50%       { transform: scale(1.1); opacity: 0.8; }
 }
 
 .calibration-btn.calibrating {
@@ -655,12 +594,8 @@ body.dark-mode .calibration-btn:hover {
 }
 
 @keyframes calibrating-pulse {
-    0%, 100% {
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-    }
-    50% {
-        box-shadow: 0 8px 35px rgba(102, 126, 234, 0.6);
-    }
+    0%, 100% { box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3); }
+    50%       { box-shadow: 0 8px 35px rgba(102, 126, 234, 0.6); }
 }
 
 .calibration-btn.calibrated {
@@ -701,12 +636,8 @@ body.dark-mode .tracking-status {
 }
 
 @keyframes blink {
-    0%, 100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.3;
-    }
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
 }
 
 .tracking-status.calibrated .status-dot {

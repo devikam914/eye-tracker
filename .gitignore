@@ -1,5 +1,4 @@
 # Eye Tracking / Calibration Files (Excluded for UI-only version)
-modules/
 face_landmarker.task
 main_web_ui.py
 web_ui_controller.py

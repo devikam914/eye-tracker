@@ -117,6 +117,8 @@ input:checked + .theme-slider .sun {
     font-weight: 600;
     color: #3d3d3d;
     transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 body.dark-mode .back-btn {
@@ -295,61 +297,45 @@ body.dark-mode .call-number {
     background: rgba(255, 255, 255, 0.05);
 }
 
-/* Dwell Progress */
-.dwell-progress {
+/* Dwell Progress — top fill bar */
+.call-card::after,
+.back-btn::after {
+    content: '';
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    border-radius: 30px;
-    border: 6px solid;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    width: 0%;
+    height: 5px;
+    background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+    border-radius: 30px 30px 0 0;
+    z-index: 2;
     pointer-events: none;
 }
 
-.emergency-card .dwell-progress {
-    border-color: #ff3131;
+.call-card.dwelling::after,
+.back-btn.dwelling::after {
+    animation: dwellBar var(--dwell-time, 1.5s) linear forwards;
 }
 
-.family-card .dwell-progress {
-    border-color: #4facfe;
+@keyframes dwellBar {
+    from { width: 0%; }
+    to   { width: 100%; }
 }
 
-.call-card.dwelling .dwell-progress {
-    opacity: 1;
-    animation: dwellProgress 1.5s linear forwards;
+.call-card.dwelling {
+    border-color: #4facfe !important;
+    box-shadow: 0 0 30px rgba(79, 172, 254, 0.5);
 }
 
-@keyframes dwellProgress {
-    from {
-        clip-path: polygon(50% 50%, 50% 0%, 50% 0%, 50% 0%, 50% 0%, 50% 0%, 50% 0%);
-    }
-    12.5% {
-        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 0%, 100% 0%, 100% 0%, 50% 0%);
-    }
-    25% {
-        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 50%, 100% 50%, 50% 0%);
-    }
-    37.5% {
-        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 100% 100%, 50% 0%);
-    }
-    50% {
-        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 50% 100%, 50% 0%);
-    }
-    62.5% {
-        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 50% 100%, 0% 100%);
-    }
-    75% {
-        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 50% 100%, 0% 100%, 0% 50%);
-    }
-    87.5% {
-        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 50% 100%, 0% 100%, 0% 50%, 0% 0%);
-    }
-    to {
-        clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%, 100% 100%, 50% 100%, 0% 100%, 0% 50%, 0% 0%, 50% 0%);
-    }
+.back-btn.dwelling {
+    border-color: #4facfe !important;
+    box-shadow: 0 0 15px rgba(79, 172, 254, 0.4);
+}
+
+/* Ensure content stays above bar */
+.call-card > *, .back-btn > * {
+    position: relative;
+    z-index: 1;
 }
 
 /* Instruction Bar */

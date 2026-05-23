@@ -25,17 +25,16 @@ function loadSettings() {
         bluetoothEnabled = settings.bluetoothEnabled !== undefined ? settings.bluetoothEnabled : true;
         wifiEnabled = settings.wifiEnabled !== undefined ? settings.wifiEnabled : true;
         
-        // Update UI
         document.getElementById('dwell-value').textContent = dwellTime.toFixed(1);
         document.getElementById('dark-mode-toggle').checked = darkMode;
         document.getElementById('bluetooth-toggle').checked = bluetoothEnabled;
         document.getElementById('wifi-toggle').checked = wifiEnabled;
         
-        // Apply dark mode if enabled
         if (darkMode) {
             document.body.classList.add('dark-mode');
         }
     }
+    document.documentElement.style.setProperty('--dwell-time', dwellTime + 's');
 }
 
 // Save settings
@@ -54,11 +53,11 @@ function saveSettings() {
     }
 }
 
-// Dwell time controls
 function increaseDwell() {
     if (dwellTime < 5.0) {
         dwellTime += 0.5;
         document.getElementById('dwell-value').textContent = dwellTime.toFixed(1);
+        document.documentElement.style.setProperty('--dwell-time', dwellTime + 's');
         saveSettings();
         playFeedback();
     }
@@ -68,6 +67,7 @@ function decreaseDwell() {
     if (dwellTime > 0.5) {
         dwellTime -= 0.5;
         document.getElementById('dwell-value').textContent = dwellTime.toFixed(1);
+        document.documentElement.style.setProperty('--dwell-time', dwellTime + 's');
         saveSettings();
         playFeedback();
     }
@@ -120,27 +120,23 @@ function toggleWifi() {
     }
 }
 
-// Shutdown
+// Shutdown — closes the application
 function shutdown() {
-    if (confirm('Are you sure you want to shutdown?')) {
-        playFeedback();
-        if (window.pywebview) {
-            window.pywebview.api.shutdown();
-        } else {
-            alert('Shutdown command sent');
-        }
+    playFeedback();
+    if (window.pywebview) {
+        window.pywebview.api.shutdown();
+    } else {
+        window.close();
     }
 }
 
-// Restart
+// Restart — closes the application
 function restart() {
-    if (confirm('Are you sure you want to restart?')) {
-        playFeedback();
-        if (window.pywebview) {
-            window.pywebview.api.restart();
-        } else {
-            alert('Restart command sent');
-        }
+    playFeedback();
+    if (window.pywebview) {
+        window.pywebview.api.restart();
+    } else {
+        window.close();
     }
 }
 
@@ -165,77 +161,92 @@ function playFeedback() {
 
 // Family Contact Functions
 function loadFamilyContact() {
-    const saved = localStorage.getItem('familyContact');
     const savedDisplay = document.getElementById('saved-contact-display');
     const inputSection = document.getElementById('contact-input-section');
-    
-    if (saved) {
-        const contact = JSON.parse(saved);
-        
-        // Show saved contact display
-        document.getElementById('saved-name-display').textContent = contact.name || '-';
+
+    _waitForPywebview(5000, () => {
+        window.pywebview.api.get_family_contact().then(contact => {
+            _applyContactDisplay(contact, savedDisplay, inputSection);
+        }).catch(() => {
+            savedDisplay.style.display = 'none';
+            inputSection.style.display = 'flex';
+        });
+    }, () => {
+        const saved = localStorage.getItem('familyContact');
+        _applyContactDisplay(saved ? JSON.parse(saved) : null, savedDisplay, inputSection);
+    });
+}
+
+// Wait up to maxMs for window.pywebview.api, then call onReady or onFail.
+function _waitForPywebview(maxMs, onReady, onFail) {
+    const start = Date.now();
+    function check() {
+        if (window.pywebview && window.pywebview.api) { onReady(); }
+        else if (Date.now() - start < maxMs) { setTimeout(check, 100); }
+        else { onFail(); }
+    }
+    check();
+}
+
+function _applyContactDisplay(contact, savedDisplay, inputSection) {
+    if (contact && contact.phone) {
+        document.getElementById('saved-name-display').textContent  = contact.name  || '-';
         document.getElementById('saved-phone-display').textContent = contact.phone || '-';
         savedDisplay.style.display = 'block';
         inputSection.style.display = 'none';
     } else {
-        // Show input fields
         savedDisplay.style.display = 'none';
         inputSection.style.display = 'flex';
-        document.getElementById('family-name').value = '';
+        document.getElementById('family-name').value  = '';
         document.getElementById('family-phone').value = '';
     }
 }
 
 function saveFamilyContact() {
-    const name = document.getElementById('family-name').value.trim();
+    const name  = document.getElementById('family-name').value.trim();
     const phone = document.getElementById('family-phone').value.trim();
-    
-    if (!name || !phone) {
-        alert('Please enter both name and phone number');
-        return;
-    }
-    
-    // Validate phone number (basic validation)
-    if (phone.length < 10) {
-        alert('Please enter a valid phone number');
-        return;
-    }
-    
+
+    if (!name || !phone) { alert('Please enter both name and phone number'); return; }
+    if (phone.length < 7) { alert('Please enter a valid phone number'); return; }
+
     const contact = { name, phone };
-    localStorage.setItem('familyContact', JSON.stringify(contact));
-    
-    playFeedback();
-    
-    // Show success message
-    showSuccessMessage();
-    
-    // Switch to display mode after a short delay
-    setTimeout(() => {
-        loadFamilyContact();
-    }, 1500);
-    
-    // Send to Python backend
-    if (window.pywebview) {
-        window.pywebview.api.update_family_contact(contact);
+
+    // Save via Python to disk (persists across sessions)
+    if (window.pywebview && window.pywebview.api) {
+        window.pywebview.api.update_family_contact(contact).then(() => {
+            showSuccessMessage();
+            setTimeout(loadFamilyContact, 1500);
+        });
+    } else {
+        localStorage.setItem('familyContact', JSON.stringify(contact));
+        showSuccessMessage();
+        setTimeout(loadFamilyContact, 1500);
     }
+
+    playFeedback();
 }
 
 function enableEditContact() {
     const savedDisplay = document.getElementById('saved-contact-display');
     const inputSection = document.getElementById('contact-input-section');
-    
-    // Load current values into input fields
-    const saved = localStorage.getItem('familyContact');
-    if (saved) {
-        const contact = JSON.parse(saved);
-        document.getElementById('family-name').value = contact.name || '';
-        document.getElementById('family-phone').value = contact.phone || '';
-    }
-    
-    // Show input fields, hide display
-    savedDisplay.style.display = 'none';
-    inputSection.style.display = 'flex';
-    
+
+    _waitForPywebview(3000, () => {
+        window.pywebview.api.get_family_contact().then(contact => {
+            document.getElementById('family-name').value  = contact.name  || '';
+            document.getElementById('family-phone').value = contact.phone || '';
+            savedDisplay.style.display = 'none';
+            inputSection.style.display = 'flex';
+        });
+    }, () => {
+        const saved = localStorage.getItem('familyContact');
+        if (saved) {
+            const c = JSON.parse(saved);
+            document.getElementById('family-name').value  = c.name  || '';
+            document.getElementById('family-phone').value = c.phone || '';
+        }
+        savedDisplay.style.display = 'none';
+        inputSection.style.display = 'flex';
+    });
     playFeedback();
 }
 
@@ -261,63 +272,36 @@ function showSuccessMessage() {
     }, 3000);
 }
 
-// Dwell tracking setup
-function setupDwellTracking() {
-    const interactiveElements = document.querySelectorAll(
-        '.control-btn, .action-btn, .toggle-switch, .close-btn, .save-btn, .edit-contact-btn'
-    );
-    
-    interactiveElements.forEach(element => {
-        element.addEventListener('mouseenter', () => {
-            startDwell(element);
-        });
-        
-        element.addEventListener('mouseleave', () => {
-            stopDwell(element);
-        });
-    });
-}
+// ---- Dwell tracking -------------------------------------------------------
+// Python's DwellClicker fires real OS mouse clicks — JS dwell would double-fire.
+function setupDwellTracking() { /* no-op */ }
+function startDwell(element)  { /* no-op */ }
+function stopDwell(element)   { /* no-op */ }
+function activateElement(element) { element.click(); }
 
-function startDwell(element) {
-    if (currentElement === element) return;
-    
-    stopDwell(currentElement);
-    currentElement = element;
-    
-    element.classList.add('dwelling');
-    
-    dwellTimer = setTimeout(() => {
-        activateElement(element);
-    }, dwellTime * 1000);
-}
-
-function stopDwell(element) {
-    if (!element) return;
-    
-    element.classList.remove('dwelling');
-    
-    if (dwellTimer) {
-        clearTimeout(dwellTimer);
-        dwellTimer = null;
+// Dwell visual feedback — poll Python's dwell_progress
+(function startDwellFeedback() {
+    let _lastDwelling = null;
+    function poll() {
+        if (!window.pywebview || !window.pywebview.api) {
+            setTimeout(poll, 200); return;
+        }
+        window.pywebview.api.get_tracking_status().then(s => {
+            const progress = s.dwell_progress || 0;
+            const hovered = document.querySelector(
+                '.control-btn:hover, .action-btn:hover, .save-btn:hover, .edit-contact-btn:hover, .back-btn:hover'
+            );
+            const target = (hovered && progress > 0.02) ? hovered : null;
+            if (target !== _lastDwelling) {
+                if (_lastDwelling) _lastDwelling.classList.remove('dwelling');
+                if (target) target.classList.add('dwelling');
+                _lastDwelling = target;
+            }
+            setTimeout(poll, 80);
+        }).catch(() => setTimeout(poll, 200));
     }
-    
-    if (currentElement === element) {
-        currentElement = null;
-    }
-}
-
-function activateElement(element) {
-    stopDwell(element);
-    
-    // Trigger click
-    element.click();
-    
-    // Visual feedback
-    element.style.transform = 'scale(0.95)';
-    setTimeout(() => {
-        element.style.transform = '';
-    }, 150);
-}
+    setTimeout(poll, 1500);
+})();
 
 // Gaze tracking integration
 function updateGazePosition(x, y) {
