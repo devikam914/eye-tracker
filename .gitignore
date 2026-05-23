@@ -18,6 +18,8 @@ build/
 venv/
 env/
 ENV/
+.venv/
+working-backend/.venv/
 
 # IDE
 .vscode/
